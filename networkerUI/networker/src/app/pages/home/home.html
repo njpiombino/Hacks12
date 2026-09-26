@@ -1,0 +1,138 @@
+<section class="mb-10 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <p class="hand text-xl">{{ today | date: 'EEEE, MMMM d' }}</p>
+    <h1 class="text-4xl font-semibold">{{ greeting() }}</h1>
+  </div>
+  <div class="flex gap-2">
+    <a routerLink="/people" class="btn btn-outline">Find people</a>
+    <button class="btn btn-primary" (click)="creating.set(true)">Schedule a meeting</button>
+  </div>
+</section>
+
+@if (session.me(); as me) {
+  @if (!me.headline) {
+    <a routerLink="/profile" class="card mb-8 flex items-center gap-4 border-dashed px-5 py-4 transition-colors hover:border-ink-3">
+      <span class="hand text-2xl">psst —</span>
+      <span class="text-sm text-ink-2">Add a headline and a few lines about yourself so people know who's knocking.</span>
+      <span class="ml-auto text-sm font-medium text-forest">Finish your profile →</span>
+    </a>
+  }
+}
+
+<div class="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+  <div class="space-y-8">
+    <!-- Coming up -->
+    <section>
+      <div class="mb-3 flex items-baseline justify-between">
+        <h2 class="section-title">Coming up</h2>
+        <a routerLink="/calendar" class="text-sm text-ink-2 hover:text-ink">Open calendar →</a>
+      </div>
+      @if (upcoming(); as meetings) {
+        @if (meetings.length) {
+          <ol class="card divide-y divide-line">
+            @for (m of meetings.slice(0, 6); track m.id) {
+              <li>
+                <button class="flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-sunken/50" (click)="editing.set(m)">
+                  <div class="w-14 shrink-0 text-center">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-clay">{{ m.startsAt | date: 'EEE' }}</p>
+                    <p class="font-display text-2xl font-semibold leading-none">{{ m.startsAt | date: 'd' }}</p>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate font-medium">{{ m.title }}</p>
+                    <p class="truncate text-sm text-ink-2">
+                      {{ m.startsAt | date: 'h:mm a' }} – {{ m.endsAt | date: 'h:mm a' }}
+                      @if (m.location) {
+                        · {{ m.location }}
+                      }
+                    </p>
+                  </div>
+                  @if (m.with; as w) {
+                    <app-avatar [name]="w.name" [src]="w.pictureUrl" size="sm" />
+                  }
+                </button>
+              </li>
+            }
+          </ol>
+        } @else {
+          <div class="empty">Nothing on the books for the next two weeks. Who haven't you talked to in a while?</div>
+        }
+      }
+    </section>
+
+    <!-- Recent notes -->
+    <section>
+      <h2 class="section-title mb-3">Recent notes</h2>
+      @if (notes(); as list) {
+        @if (list.length) {
+          <div class="grid gap-4 sm:grid-cols-2">
+            @for (n of list; track n.id) {
+              <a [routerLink]="['/people', n.subject.id]" class="note-card block text-[0.95rem] transition-transform hover:-translate-y-0.5">
+                <p class="hand -mt-1 mb-0.5 text-base">{{ n.subject.name }} · {{ n.updatedAt | date: 'MMM d' }}</p>
+                <p class="line-clamp-4 whitespace-pre-line">{{ n.body }}</p>
+              </a>
+            }
+          </div>
+        } @else {
+          <div class="empty">Notes you write about people will show up here. They're private to you.</div>
+        }
+      }
+    </section>
+  </div>
+
+  <aside class="space-y-8">
+    @if (connections(); as c) {
+      @if (c.incoming.length) {
+        <section>
+          <h2 class="section-title mb-3">Waiting on you</h2>
+          <ul class="space-y-3">
+            @for (item of c.incoming; track item.id) {
+              <li class="card flex items-center gap-3 p-4">
+                <a [routerLink]="['/people', item.person.id]"><app-avatar [name]="item.person.name" [src]="item.person.pictureUrl" /></a>
+                <div class="min-w-0 flex-1">
+                  <a [routerLink]="['/people', item.person.id]" class="block truncate font-medium hover:underline">{{ item.person.name }}</a>
+                  <p class="truncate text-xs text-ink-2">{{ item.person.headline || 'wants to connect' }}</p>
+                </div>
+                <button class="btn btn-primary btn-sm" (click)="accept(item.id)">Accept</button>
+                <button class="btn btn-ghost btn-sm" (click)="decline(item.id)" aria-label="Decline">✕</button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <section>
+        <div class="mb-3 flex items-baseline justify-between">
+          <h2 class="section-title">Your people</h2>
+          <span class="text-sm text-ink-3">{{ c.connected.length }}</span>
+        </div>
+        @if (c.connected.length) {
+          <ul class="card divide-y divide-line">
+            @for (item of c.connected.slice(0, 8); track item.id) {
+              <li>
+                <a [routerLink]="['/people', item.person.id]" class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-sunken/50">
+                  <app-avatar [name]="item.person.name" [src]="item.person.pictureUrl" size="sm" />
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium">{{ item.person.name }}</p>
+                    <p class="truncate text-xs text-ink-2">{{ item.person.headline }}</p>
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (c.connected.length > 8) {
+            <a routerLink="/people" class="mt-2 block text-center text-sm text-ink-2 hover:text-ink">See all {{ c.connected.length }}</a>
+          }
+        } @else {
+          <div class="empty">
+            No connections yet.
+            <a routerLink="/people" class="font-medium text-forest hover:underline">Find someone you know →</a>
+          </div>
+        }
+      </section>
+    }
+  </aside>
+</div>
+
+@if (creating() || editing()) {
+  <app-meeting-dialog [meeting]="editing()" (saved)="onSaved()" (closed)="editing.set(null); creating.set(false)" />
+}

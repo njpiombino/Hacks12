@@ -1,3 +1,176 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+@theme {
+  --color-paper: #f6f1e7;
+  --color-sunken: #eee7d8;
+  --color-card: #fffdf8;
+  --color-line: #e3d9c6;
+  --color-ink: #23272a;
+  --color-ink-2: #555a5e;
+  --color-ink-3: #8b8d8c;
+  --color-forest: #2f5d4e;
+  --color-forest-dark: #234639;
+  --color-forest-soft: #e2ebe4;
+  --color-clay: #b85c38;
+  --color-clay-soft: #f5e3d8;
+
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-hand: 'Caveat', 'Bradley Hand', cursive;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-paper);
+    /* faint paper grain */
+    background-image: radial-gradient(rgb(120 90 40 / 0.035) 1px, transparent 1px);
+    background-size: 5px 5px;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 50;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background: var(--color-clay-soft);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-forest);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+    box-shadow: 0 1px 0 rgb(80 60 20 / 0.04), 0 10px 24px -18px rgb(80 60 20 / 0.35);
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  /* A slightly uneven, hand-inked underline. */
+  .squiggle {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5.5c14-3 27-3.5 40-1.5s27 2.5 40 0 25-3 38-1' fill='none' stroke='%23b85c38' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 0.35em;
+    padding-bottom: 0.2em;
+  }
+
+  .hand {
+    font-family: var(--font-hand);
+    font-size: 1.2rem;
+    line-height: 1.1;
+    color: var(--color-clay);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    padding: 0.5rem 1.05rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    transition: background-color 120ms, border-color 120ms, transform 120ms;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+  .btn-primary { background: var(--color-forest); color: #fdfbf5; }
+  .btn-primary:hover:not(:disabled) { background: var(--color-forest-dark); }
+  .btn-outline { border-color: var(--color-line); background: var(--color-card); color: var(--color-ink); }
+  .btn-outline:hover:not(:disabled) { border-color: var(--color-ink-3); }
+  .btn-ghost { color: var(--color-ink-2); }
+  .btn-ghost:hover:not(:disabled) { background: var(--color-sunken); color: var(--color-ink); }
+  .btn-danger { color: var(--color-clay); }
+  .btn-danger:hover:not(:disabled) { background: var(--color-clay-soft); }
+  .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+
+  .label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-ink-2);
+    margin-bottom: 0.3rem;
+  }
+
+  .input {
+    width: 100%;
+    border: 1px solid var(--color-line);
+    background: #fffefb;
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.95rem;
+    color: var(--color-ink);
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .input::placeholder { color: var(--color-ink-3); }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-forest);
+    box-shadow: 0 0 0 3px var(--color-forest-soft);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--color-sunken);
+    color: var(--color-ink-2);
+  }
+  .chip-forest { background: var(--color-forest-soft); color: var(--color-forest-dark); }
+  .chip-clay { background: var(--color-clay-soft); color: #8a3f22; }
+
+  /* Private notes look like index cards. */
+  .note-card {
+    position: relative;
+    background-color: #fffdf6;
+    background-image:
+      linear-gradient(to right, transparent 1.6rem, rgb(184 92 56 / 0.28) 1.6rem, rgb(184 92 56 / 0.28) calc(1.6rem + 1px), transparent calc(1.6rem + 1px)),
+      repeating-linear-gradient(to bottom, transparent 0, transparent 1.55rem, rgb(47 93 78 / 0.1) 1.55rem, rgb(47 93 78 / 0.1) calc(1.55rem + 1px));
+    background-position: 0 2.2rem;
+    border: 1px solid var(--color-line);
+    border-radius: 4px 4px 10px 4px;
+    padding: 0.7rem 1rem 0.9rem 2.3rem;
+    line-height: 1.55rem;
+    box-shadow: 0 8px 18px -14px rgb(80 60 20 / 0.45);
+  }
+  .note-card:nth-child(odd) { transform: rotate(-0.35deg); }
+  .note-card:nth-child(even) { transform: rotate(0.3deg); }
+
+  .empty {
+    border: 1.5px dashed var(--color-line);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    color: var(--color-ink-3);
+    font-size: 0.9rem;
+  }
+}

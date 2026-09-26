@@ -1,0 +1,75 @@
+<section class="mb-8">
+  <h1 class="text-4xl font-semibold">Your profile</h1>
+  <p class="mt-1 text-ink-2">This is what people see when they find you.</p>
+</section>
+
+@if (loaded()) {
+  <div class="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+    <form class="card space-y-5 p-6 sm:p-8" (ngSubmit)="save()" #f="ngForm">
+      <div>
+        <label class="label" for="p-name">Name</label>
+        <input id="p-name" name="name" class="input" [(ngModel)]="form.name" required maxlength="120" />
+      </div>
+      <div>
+        <label class="label" for="p-headline">Headline</label>
+        <input
+          id="p-headline"
+          name="headline"
+          class="input"
+          [(ngModel)]="form.headline"
+          maxlength="160"
+          placeholder="What you do, in a sentence: “Junior studying CS, building tools for teachers”"
+        />
+      </div>
+      <div>
+        <label class="label" for="p-location">Location</label>
+        <input id="p-location" name="location" class="input" [(ngModel)]="form.location" maxlength="120" placeholder="Williamsburg, VA" />
+      </div>
+      <div>
+        <label class="label" for="p-bio">About you</label>
+        <textarea
+          id="p-bio"
+          name="bio"
+          rows="5"
+          class="input resize-y"
+          [(ngModel)]="form.bio"
+          maxlength="2000"
+          placeholder="What are you into? What could someone ask you about?"
+        ></textarea>
+      </div>
+      <div>
+        <label class="label" for="p-picture">Photo URL</label>
+        <input id="p-picture" name="pictureUrl" class="input" [(ngModel)]="form.pictureUrl" maxlength="1000" placeholder="https://…" />
+      </div>
+
+      @if (error(); as err) {
+        <p class="text-sm text-clay">{{ err }}</p>
+      }
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        @if (savedAt()) {
+          <span class="hand text-lg">saved!</span>
+        }
+        <button type="submit" class="btn btn-primary" [disabled]="f.invalid || saving()">{{ saving() ? 'Saving…' : 'Save profile' }}</button>
+      </div>
+    </form>
+
+    <aside>
+      <p class="hand mb-2 text-lg">preview</p>
+      <div class="card p-6">
+        <app-avatar [name]="form.name" [src]="form.pictureUrl" size="lg" />
+        <p class="mt-4 font-display text-2xl font-semibold leading-tight">{{ form.name || 'Your name' }}</p>
+        <p class="mt-1 text-ink-2">{{ form.headline || 'Your headline' }}</p>
+        @if (form.location) {
+          <p class="mt-2 text-sm text-ink-3">📍 {{ form.location }}</p>
+        }
+        @if (form.bio) {
+          <p class="mt-4 line-clamp-5 whitespace-pre-line text-sm leading-relaxed">{{ form.bio }}</p>
+        }
+      </div>
+      @if (session.me(); as me) {
+        <a [routerLink]="['/people', me.id]" class="mt-3 block text-center text-sm text-ink-2 hover:text-ink">View your public page →</a>
+      }
+    </aside>
+  </div>
+}

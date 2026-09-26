@@ -1,0 +1,64 @@
+<div class="mx-auto flex min-h-screen max-w-6xl flex-col px-6">
+  <header class="flex h-20 items-center">
+    <span class="font-display text-2xl font-semibold tracking-tight">Networker</span>
+    <button class="btn btn-ghost ml-auto" (click)="login()">Sign in</button>
+  </header>
+
+  <section class="grid flex-1 items-center gap-12 py-12 md:grid-cols-[1.15fr_1fr]">
+    <div>
+      <p class="hand mb-3 text-2xl">for people who remember people</p>
+      <h1 class="text-5xl font-semibold leading-[1.05] sm:text-6xl">
+        Your network,<br />
+        kept <span class="squiggle">by hand.</span>
+      </h1>
+      <p class="mt-6 max-w-md text-lg leading-relaxed text-ink-2">
+        Networker is a quiet place to keep up with the people you meet. Jot down what matters to them, and plan the next coffee
+        before the thread goes cold.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <button class="btn btn-primary px-6 py-3 text-base" (click)="signup()">Start your network</button>
+        <button class="btn btn-outline px-6 py-3 text-base" (click)="login()">I already have an account</button>
+      </div>
+    </div>
+
+    <!-- A little still life of the app: a person, a note card, a calendar slip. -->
+    <div class="relative mx-auto h-[380px] w-full max-w-sm" aria-hidden="true">
+      <div class="card absolute left-0 top-4 w-72 -rotate-2 p-5">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex size-12 items-center justify-center rounded-full bg-forest font-display text-lg font-semibold text-[#fdfbf5]">MO</span>
+          <div>
+            <p class="font-display text-lg font-semibold leading-tight">Maya Okafor</p>
+            <p class="text-sm text-ink-2">Product designer · Richmond</p>
+          </div>
+        </div>
+        <span class="chip chip-forest mt-4">Connected since March</span>
+      </div>
+
+      <div class="note-card absolute right-0 top-36 w-64 rotate-2 text-[0.95rem]">
+        <p class="hand -mt-1 mb-1 text-base">met at the design meetup</p>
+        Just moved to Richmond. Training for her first half marathon. Loves the Figma-to-code question.
+      </div>
+
+      <div class="card absolute bottom-2 left-6 w-60 -rotate-1 p-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-clay">Thursday</p>
+        <p class="mt-1 font-display text-lg font-semibold">Coffee with Maya</p>
+        <p class="text-sm text-ink-2">10:00 – 10:30 · Lamplighter</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="grid gap-8 border-t border-line py-10 text-sm text-ink-2 sm:grid-cols-3">
+    <div>
+      <p class="font-display text-base font-semibold text-ink">Connect, deliberately</p>
+      <p class="mt-1">Invite the people you actually know. No feeds, no follower counts.</p>
+    </div>
+    <div>
+      <p class="font-display text-base font-semibold text-ink">Private notes</p>
+      <p class="mt-1">Remember kids' names, job changes and the book they recommended. Only you can see them.</p>
+    </div>
+    <div>
+      <p class="font-display text-base font-semibold text-ink">A calendar for catching up</p>
+      <p class="mt-1">Schedule meetings with connections and they'll see them on their calendar too.</p>
+    </div>
+  </footer>
+</div>

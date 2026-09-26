@@ -1,0 +1,86 @@
+<div class="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 p-4 sm:items-center" (click)="closed.emit()">
+  <form
+    class="card w-full max-w-lg p-6"
+    (click)="$event.stopPropagation()"
+    (ngSubmit)="save()"
+    #f="ngForm"
+    role="dialog"
+    aria-labelledby="meeting-dialog-title"
+  >
+    @let m = meeting();
+    <div class="mb-5 flex items-start justify-between gap-4">
+      <div>
+        <h2 id="meeting-dialog-title" class="text-2xl font-semibold">{{ m ? (m.mine ? 'Edit meeting' : m.title) : 'Schedule a meeting' }}</h2>
+        @if (m && !m.mine) {
+          <p class="mt-1 text-sm text-ink-2">{{ m.with?.name }} invited you. Only they can change it.</p>
+        }
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm -mr-2" (click)="closed.emit()" aria-label="Close">✕</button>
+    </div>
+
+    <fieldset class="space-y-4" [disabled]="m && !m.mine">
+      <div>
+        <label class="label" for="mt-title">What</label>
+        <input id="mt-title" name="title" class="input" [(ngModel)]="form.title" required maxlength="200" placeholder="Coffee catch-up" />
+      </div>
+
+      <div class="grid grid-cols-[1.4fr_1fr_1fr] gap-3">
+        <div>
+          <label class="label" for="mt-date">Day</label>
+          <input id="mt-date" name="date" type="date" class="input" [(ngModel)]="form.date" required />
+        </div>
+        <div>
+          <label class="label" for="mt-start">From</label>
+          <input id="mt-start" name="start" type="time" class="input" [(ngModel)]="form.start" required />
+        </div>
+        <div>
+          <label class="label" for="mt-end">To</label>
+          <input id="mt-end" name="end" type="time" class="input" [(ngModel)]="form.end" required />
+        </div>
+      </div>
+
+      <div>
+        <label class="label" for="mt-with">With</label>
+        <select id="mt-with" name="attendeeId" class="input" [(ngModel)]="form.attendeeId">
+          <option [ngValue]="null">Just me</option>
+          @for (p of people(); track p.id) {
+            <option [ngValue]="p.id">{{ p.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="label" for="mt-where">Where</label>
+        <input id="mt-where" name="location" class="input" [(ngModel)]="form.location" maxlength="200" placeholder="Blue Bottle on 5th, or a video link" />
+      </div>
+
+      <div>
+        <label class="label" for="mt-desc">Anything to remember</label>
+        <textarea
+          id="mt-desc"
+          name="description"
+          rows="3"
+          class="input resize-none"
+          [(ngModel)]="form.description"
+          maxlength="2000"
+          placeholder="Ask about her new role; bring the portfolio link"
+        ></textarea>
+      </div>
+    </fieldset>
+
+    @if (error(); as err) {
+      <p class="mt-4 text-sm text-clay">{{ err }}</p>
+    }
+
+    <div class="mt-6 flex items-center gap-2">
+      @if (m?.mine) {
+        <button type="button" class="btn btn-danger" (click)="remove()">Delete</button>
+      }
+      <span class="flex-1"></span>
+      <button type="button" class="btn btn-ghost" (click)="closed.emit()">{{ m && !m.mine ? 'Close' : 'Cancel' }}</button>
+      @if (!m || m.mine) {
+        <button type="submit" class="btn btn-primary" [disabled]="f.invalid || saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      }
+    </div>
+  </form>
+</div>

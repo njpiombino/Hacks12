@@ -1,0 +1,162 @@
+<a routerLink="/people" class="mb-6 inline-block text-sm text-ink-2 hover:text-ink">← People</a>
+
+@if (notFound()) {
+  <div class="empty">We couldn't find that person.</div>
+}
+
+@if (person(); as p) {
+  <section class="card mb-8 flex flex-col gap-6 p-6 sm:flex-row sm:items-start sm:p-8">
+    <app-avatar [name]="p.name" [src]="p.pictureUrl" size="xl" />
+    <div class="min-w-0 flex-1">
+      <h1 class="text-4xl font-semibold leading-tight">{{ p.name }}</h1>
+      @if (p.headline) {
+        <p class="mt-1 text-lg text-ink-2">{{ p.headline }}</p>
+      }
+      <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-2">
+        @if (p.location) {
+          <span>📍 {{ p.location }}</span>
+        }
+        @if (p.email) {
+          <a [href]="'mailto:' + p.email" class="text-forest hover:underline">{{ p.email }}</a>
+        }
+      </div>
+      @if (p.bio) {
+        <p class="mt-4 max-w-2xl whitespace-pre-line leading-relaxed">{{ p.bio }}</p>
+      }
+    </div>
+
+    <div class="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-end">
+      @switch (p.relation) {
+        @case ('SELF') {
+          <a routerLink="/profile" class="btn btn-outline">Edit your profile</a>
+        }
+        @case ('CONNECTED') {
+          <span class="chip chip-forest">Connected</span>
+          <button class="btn btn-primary" (click)="dialogOpen.set(true)">Schedule a meeting</button>
+          <button class="btn btn-ghost btn-sm" (click)="disconnect(p.connectionId!, 'Remove')">Remove connection</button>
+        }
+        @case ('OUTGOING') {
+          <span class="chip">Request sent</span>
+          <button class="btn btn-ghost btn-sm" (click)="disconnect(p.connectionId!, 'Withdraw')">Withdraw</button>
+        }
+        @case ('INCOMING') {
+          <p class="text-sm text-ink-2">{{ p.name?.split(' ')?.[0] }} wants to connect.</p>
+          <div class="flex gap-2">
+            <button class="btn btn-primary" (click)="accept(p.connectionId!)">Accept</button>
+            <button class="btn btn-ghost" (click)="disconnect(p.connectionId!, 'Decline')">Decline</button>
+          </div>
+        }
+        @default {
+          <button class="btn btn-primary" (click)="connect()">Connect</button>
+        }
+      }
+    </div>
+  </section>
+
+  @if (p.relation !== 'SELF') {
+    <div class="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+      <!-- Notes -->
+      <section>
+        <div class="mb-3 flex items-baseline justify-between">
+          <h2 class="section-title">Your notes</h2>
+          <span class="hand text-base">only you can see these</span>
+        </div>
+
+        <form class="card mb-6 p-4" (ngSubmit)="addNote()">
+          <label for="new-note" class="sr-only">New note about {{ p.name }}</label>
+          <textarea
+            id="new-note"
+            name="draft"
+            rows="3"
+            class="input resize-none !border-0 !p-1 !shadow-none"
+            [(ngModel)]="draft"
+            [placeholder]="'Where you met, what ' + (p.name?.split(' ')?.[0] ?? 'they') + ' is working on, what to ask next time…'"
+            (keydown.meta.enter)="addNote()"
+            (keydown.control.enter)="addNote()"
+          ></textarea>
+          <div class="mt-2 flex items-center justify-between">
+            <span class="text-xs text-ink-3">⌘↵ to save</span>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!draft.trim()">Add note</button>
+          </div>
+        </form>
+
+        <div class="space-y-5">
+          @for (n of notes(); track n.id) {
+            <article class="note-card group">
+              <div class="-mt-1 mb-0.5 flex items-center justify-between">
+                <p class="hand text-base">
+                  {{ n.createdAt | date: 'MMM d, y' }}
+                  @if (n.updatedAt !== n.createdAt) {
+                    <span class="text-ink-3">(edited)</span>
+                  }
+                </p>
+                @if (editingNoteId() !== n.id) {
+                  <div class="flex gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                    <button class="btn btn-ghost btn-sm" (click)="startEdit(n)">Edit</button>
+                    <button class="btn btn-danger btn-sm" (click)="deleteNote(n)">Delete</button>
+                  </div>
+                }
+              </div>
+              @if (editingNoteId() === n.id) {
+                <textarea name="edit" rows="4" class="input resize-none" [(ngModel)]="editDraft"></textarea>
+                <div class="mt-2 flex justify-end gap-2">
+                  <button class="btn btn-ghost btn-sm" (click)="editingNoteId.set(null)">Cancel</button>
+                  <button class="btn btn-primary btn-sm" (click)="saveEdit(n)">Save</button>
+                </div>
+              } @else {
+                <p class="whitespace-pre-line">{{ n.body }}</p>
+              }
+            </article>
+          } @empty {
+            <div class="empty">No notes yet. Future you will be grateful for a line or two.</div>
+          }
+        </div>
+      </section>
+
+      <!-- Meetings -->
+      <section>
+        <h2 class="section-title mb-3">Meetings</h2>
+        @if (p.relation !== 'CONNECTED' && !meetings().length) {
+          <div class="empty">Once you're connected, you can schedule time together here.</div>
+        } @else {
+          @if (upcoming().length) {
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-clay">Upcoming</p>
+            <ul class="card mb-6 divide-y divide-line">
+              @for (m of upcoming(); track m.id) {
+                <li>
+                  <button class="w-full px-4 py-3 text-left hover:bg-sunken/50" (click)="editingMeeting.set(m)">
+                    <p class="font-medium">{{ m.title }}</p>
+                    <p class="text-sm text-ink-2">{{ m.startsAt | date: 'EEE, MMM d · h:mm a' }}</p>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          @if (past().length) {
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-3">Past</p>
+            <ul class="space-y-2">
+              @for (m of past(); track m.id) {
+                <li class="flex justify-between gap-2 text-sm">
+                  <span class="truncate">{{ m.title }}</span>
+                  <span class="shrink-0 text-ink-3">{{ m.startsAt | date: 'MMM d, y' }}</span>
+                </li>
+              }
+            </ul>
+          }
+          @if (!meetings().length) {
+            <div class="empty">You haven't met up yet.</div>
+          }
+        }
+      </section>
+    </div>
+  }
+
+  @if (dialogOpen() || editingMeeting()) {
+    <app-meeting-dialog
+      [meeting]="editingMeeting()"
+      [withPerson]="{ id: p.id, name: p.name, pictureUrl: p.pictureUrl }"
+      (saved)="onMeetingSaved()"
+      (closed)="dialogOpen.set(false); editingMeeting.set(null)"
+    />
+  }
+}

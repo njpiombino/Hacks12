@@ -1,0 +1,95 @@
+<section class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-4xl font-semibold">{{ month() | date: 'MMMM' }} <span class="font-normal text-ink-3">{{ month() | date: 'y' }}</span></h1>
+  </div>
+  <div class="flex items-center gap-2">
+    <button class="btn btn-outline btn-sm" (click)="shift(-1)" aria-label="Previous month">←</button>
+    <button class="btn btn-outline btn-sm" (click)="goToday()">Today</button>
+    <button class="btn btn-outline btn-sm" (click)="shift(1)" aria-label="Next month">→</button>
+    <button class="btn btn-primary ml-2" (click)="creatingOn.set(selected())">New meeting</button>
+  </div>
+</section>
+
+<div class="grid gap-8 lg:grid-cols-[1fr_320px]">
+  <div class="card overflow-hidden">
+    <div class="grid grid-cols-7 border-b border-line bg-sunken/60">
+      @for (d of weekdays; track d) {
+        <div class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-ink-3">{{ d }}</div>
+      }
+    </div>
+    <div class="grid grid-cols-7">
+      @for (day of days(); track day.getTime(); let i = $index) {
+        <button
+          class="group relative flex min-h-24 flex-col gap-1 border-line p-1.5 text-left transition-colors sm:min-h-28"
+          [class.border-r]="i % 7 !== 6"
+          [class.border-b]="i < 35"
+          [class.bg-sunken/40]="!inMonth(day)"
+          [class.!bg-forest-soft/60]="isSelected(day)"
+          (click)="pick(day)"
+          (dblclick)="creatingOn.set(day)"
+          [attr.aria-label]="(day | date: 'fullDate') + ', ' + meetingsOn(day).length + ' meetings'"
+        >
+          <span
+            class="inline-flex size-7 items-center justify-center rounded-full text-sm"
+            [class]="isToday(day) ? 'bg-clay font-semibold text-[#fdfbf5]' : inMonth(day) ? 'text-ink' : 'text-ink-3'"
+            >{{ day.getDate() }}</span
+          >
+          @for (m of meetingsOn(day).slice(0, 3); track m.id) {
+            <span
+              class="block truncate rounded-md px-1.5 py-0.5 text-[0.7rem] font-medium"
+              [class]="m.mine ? 'bg-forest text-[#fdfbf5]' : 'bg-clay-soft text-[#8a3f22]'"
+              >{{ m.startsAt | date: 'h:mm' }} {{ m.title }}</span
+            >
+          }
+          @if (meetingsOn(day).length > 3) {
+            <span class="px-1.5 text-[0.7rem] text-ink-2">+{{ meetingsOn(day).length - 3 }} more</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <aside>
+    <p class="hand text-xl">{{ isToday(selected()) ? 'today' : (selected() | date: 'EEEE') }}</p>
+    <h2 class="section-title mb-4">{{ selected() | date: 'MMMM d' }}</h2>
+
+    @for (m of selectedMeetings(); track m.id) {
+      <button class="card mb-3 block w-full p-4 text-left transition-transform hover:-translate-y-0.5" (click)="editing.set(m)">
+        <div class="flex items-start gap-3">
+          <span class="mt-1.5 size-2 shrink-0 rounded-full" [class]="m.mine ? 'bg-forest' : 'bg-clay'"></span>
+          <div class="min-w-0 flex-1">
+            <p class="font-medium">{{ m.title }}</p>
+            <p class="text-sm text-ink-2">{{ m.startsAt | date: 'h:mm a' }} – {{ m.endsAt | date: 'h:mm a' }}</p>
+            @if (m.location) {
+              <p class="mt-1 truncate text-sm text-ink-2">{{ m.location }}</p>
+            }
+            @if (m.with; as w) {
+              <a
+                [routerLink]="['/people', w.id]"
+                (click)="$event.stopPropagation()"
+                class="mt-2 inline-flex items-center gap-2 text-sm text-ink-2 hover:text-ink"
+              >
+                <app-avatar [name]="w.name" [src]="w.pictureUrl" size="sm" />
+                {{ m.mine ? 'with' : 'from' }} {{ w.name }}
+              </a>
+            }
+          </div>
+        </div>
+      </button>
+    } @empty {
+      <div class="empty">
+        A free day.
+        <button class="font-medium text-forest hover:underline" (click)="creatingOn.set(selected())">Plan something →</button>
+      </div>
+    }
+
+    <div class="mt-6 flex gap-4 text-xs text-ink-2">
+      <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-forest"></span> You organized</span>
+      <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-clay"></span> You were invited</span>
+    </div>
+  </aside>
+</div>
+
+@if (creatingOn() || editing()) {
+  <app-meeting-dialog [meeting]="editing()" [day]="creatingOn()" (saved)="onSaved()" (closed)="creatingOn.set(null); editing.set(null)" />
+}

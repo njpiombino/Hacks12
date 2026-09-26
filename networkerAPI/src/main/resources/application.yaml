@@ -17,7 +17,7 @@ spring:
       resourceserver:
         jwt:
           # Auth0 tenant domain, e.g. https://dev-abc123.us.auth0.com/ (trailing slash required)
-          issuer-uri: ${AUTH0_ISSUER:https://YOUR_TENANT.us.auth0.com/}
+          issuer-uri: ${AUTH0_ISSUER:https://dev-meac52y4dgsxm7hb.us.auth0.com/}
           # Identifier of the Auth0 API you created for this backend
           audiences: ${AUTH0_AUDIENCE:https://networker-api}
 
