@@ -27,19 +27,10 @@ For the "professional and handmade" feel, I used warm paper colours, a Fraunces 
 - [docker-compose.yml](docker-compose.yml) runs Postgres, and [README.md](README.md) has the setup steps.
 
 **To run it**
-1. In Auth0, create an API with the identifier `https://networker-api`, and a Single Page Application with `http://localhost:4200` as its callback, logout and web-origin URL.
-2. Put the app's domain and client ID in [environment.ts](networkerUI/networker/src/environments/environment.ts).
-3. Start Postgres with `docker compose up -d`.
-4. Start the API with `AUTH0_ISSUER=https://<tenant>/ ./mvnw spring-boot:run`, keeping the trailing slash.
-5. Start the frontend with `npm start`.
 
-**Other changes**
-- I deleted the placeholder Angular page and its test.
-- I raised the bundle size warning in `angular.json` from 500kB to 700kB, because the Auth0 library pushes the app over the old limit.
-- The database tables are created automatically at startup, which is fine for a hackathon but not for production.
-
-
-~~~
+*First time setup*
 docker compose up -d                          # Postgres (start Docker Desktop first)
+
+*Run both in different terminals*
 cd networkerAPI && ./mvnw spring-boot:run     # API on :8080
 cd networkerUI/networker && npm start         # frontend on :4200

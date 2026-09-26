@@ -2,7 +2,7 @@ spring:
   application:
     name: networker
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/networker}
+    url: ${DB_URL:jdbc:postgresql://localhost:55432/networker}
     username: ${DB_USER:networker}
     password: ${DB_PASSWORD:networker}
   mvc:
