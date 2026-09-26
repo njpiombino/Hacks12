@@ -1,3 +1,28 @@
 spring:
   application:
-    name: demo
+    name: networker
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/networker}
+    username: ${DB_USER:networker}
+    password: ${DB_PASSWORD:networker}
+  mvc:
+    problemdetails:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Auth0 tenant domain, e.g. https://dev-abc123.us.auth0.com/ (trailing slash required)
+          issuer-uri: ${AUTH0_ISSUER:https://YOUR_TENANT.us.auth0.com/}
+          # Identifier of the Auth0 API you created for this backend
+          audiences: ${AUTH0_AUDIENCE:https://networker-api}
+
+app:
+  cors-origins: ${CORS_ORIGINS:http://localhost:4200}
+  # Seeds a handful of sample people who auto-accept connection requests, so a
+  # brand-new install has someone to connect with. Turn off for real use.
+  demo-data: ${DEMO_DATA:true}
