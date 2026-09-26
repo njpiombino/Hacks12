@@ -38,4 +38,8 @@ For the "professional and handmade" feel, I used warm paper colours, a Fraunces 
 - I raised the bundle size warning in `angular.json` from 500kB to 700kB, because the Auth0 library pushes the app over the old limit.
 - The database tables are created automatically at startup, which is fine for a hackathon but not for production.
 
-Nothing is committed yet.
+
+~~~
+docker compose up -d                          # Postgres (start Docker Desktop first)
+cd networkerAPI && ./mvnw spring-boot:run     # API on :8080
+cd networkerUI/networker && npm start         # frontend on :4200
