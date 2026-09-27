@@ -18,6 +18,7 @@ export class Shell {
     { label: 'Home', path: '/', exact: true },
     { label: 'People', path: '/people', exact: false },
     { label: 'Calendar', path: '/calendar', exact: false },
+    { label: 'Assistant', path: '/chat', exact: false },
   ];
 
   constructor() {

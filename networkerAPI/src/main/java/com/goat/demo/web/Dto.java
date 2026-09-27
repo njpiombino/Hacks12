@@ -90,4 +90,15 @@ public final class Dto {
 			@Size(max = 20) List<UUID> attendeeIds) {
 	}
 
+	/** One turn of a chat, in the shape Gemini expects: role is "user" or "model". */
+	public record ChatMessage(@NotBlank String role, @NotBlank @Size(max = 4000) String text) {
+	}
+
+	public record ChatRequest(@NotBlank @Size(max = 4000) String message, List<ChatMessage> history,
+			String timezone) {
+	}
+
+	public record ChatResponse(String reply) {
+	}
+
 }

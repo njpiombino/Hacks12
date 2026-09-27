@@ -1,0 +1,41 @@
+<section class="mb-6">
+  <h1 class="text-4xl font-semibold">Assistant</h1>
+  <p class="mt-1 text-ink-2">Ask me to find someone in your network, or schedule a meeting with a connection.</p>
+</section>
+
+<div class="card flex h-[65vh] flex-col overflow-hidden">
+  <div class="flex-1 space-y-4 overflow-y-auto p-6">
+    @for (m of messages(); track $index) {
+      <div class="flex" [class.justify-end]="m.role === 'user'">
+        <div
+          class="max-w-[80%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-[0.95rem] leading-relaxed"
+          [class]="m.role === 'user' ? 'bg-forest text-white' : 'bg-sunken text-ink'"
+        >
+          {{ m.text }}
+        </div>
+      </div>
+    }
+    @if (sending()) {
+      <div class="flex">
+        <div class="max-w-[80%] rounded-2xl bg-sunken px-4 py-2.5 text-ink-2">Thinking…</div>
+      </div>
+    }
+    <div #scrollAnchor></div>
+  </div>
+
+  @if (error(); as err) {
+    <p class="px-6 pb-2 text-sm text-clay">{{ err }}</p>
+  }
+
+  <form class="flex items-center gap-2 border-t border-line p-4" (ngSubmit)="send()">
+    <input
+      class="input flex-1"
+      name="message"
+      [(ngModel)]="draft"
+      placeholder="e.g. “Who do I know in health tech?” or “Schedule coffee with Maya tomorrow at 3pm”"
+      [disabled]="sending()"
+      autocomplete="off"
+    />
+    <button type="submit" class="btn btn-primary" [disabled]="sending() || !draft.trim()">Send</button>
+  </form>
+</div>

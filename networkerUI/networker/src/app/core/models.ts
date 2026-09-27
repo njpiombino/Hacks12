@@ -105,6 +105,12 @@ export interface MeetingRequest {
   attendeeIds: string[];
 }
 
+/** role is "user" or "model" — the roles Gemini's API expects. */
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
+
 export interface ProfileUpdate {
   name: string;
   headline: string | null;
