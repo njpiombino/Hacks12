@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
@@ -23,6 +23,17 @@ export class People {
   protected readonly connections = signal<Connections | null>(null);
   protected readonly results = signal<Person[] | null>(null);
   protected query = '';
+
+  /** Filters your connections on the client; the list is already loaded. */
+  protected readonly connectionQuery = signal('');
+  protected readonly filteredConnections = computed(() => {
+    const q = this.connectionQuery().trim().toLowerCase();
+    const all = this.connections()?.connected ?? [];
+    if (!q) return all;
+    return all.filter(({ person: p }) =>
+      [p.name, p.headline, p.location].some((field) => field?.toLowerCase().includes(q)),
+    );
+  });
 
   constructor() {
     this.api.connections().subscribe((c) => {
