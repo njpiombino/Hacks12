@@ -78,6 +78,29 @@
       </div>
 
       <div>
+        <p class="label" id="p-resume">Resume</p>
+        @let me = session.me();
+        @if (me?.resume; as r) {
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-sunken/40 px-4 py-3 text-sm">
+            <app-resume-link [personId]="me!.id" [resume]="r" [label]="r.fileName" />
+            <span class="text-ink-3">{{ fileSize(r.sizeBytes) }} · added {{ r.uploadedAt | date: 'MMM d, y' }}</span>
+            <span class="flex-1"></span>
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="resumeBusy()" (click)="resumeInput.click()">Replace</button>
+            <button type="button" class="btn btn-danger btn-sm" [disabled]="resumeBusy()" (click)="removeResume()">Remove</button>
+          </div>
+        } @else {
+          <button type="button" class="btn btn-outline" [disabled]="resumeBusy()" (click)="resumeInput.click()" aria-describedby="p-resume">
+            {{ resumeBusy() ? 'Uploading…' : 'Upload a PDF' }}
+          </button>
+        }
+        <input #resumeInput type="file" accept="application/pdf,.pdf" class="hidden" (change)="onResumeSelected($event)" />
+        <p class="mt-1 text-xs text-ink-3">PDF, up to 5 MB. Only you and your connections can see it. Saved as soon as you pick it.</p>
+        @if (resumeError(); as rerr) {
+          <p class="mt-1 text-sm text-clay">{{ rerr }}</p>
+        }
+      </div>
+
+      <div>
         <label class="label" for="p-interests">Interests</label>
         <input
           id="p-interests"
