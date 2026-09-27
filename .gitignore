@@ -35,3 +35,4 @@ settings.json
 .env
 .env.*
 !.env.example
+secrets.yaml

@@ -50,6 +50,7 @@ public class PeopleController {
 		this.meetings = meetings;
 	}
 
+	/** Finds people to connect with. Existing connections are left out; pending requests stay in. */
 	@GetMapping("/people")
 	public List<Dto.Person> search(@AuthenticationPrincipal Jwt jwt, @RequestParam(defaultValue = "") String q) {
 		Profile me = profiles.current(jwt);

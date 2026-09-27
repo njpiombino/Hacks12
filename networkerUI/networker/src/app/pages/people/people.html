@@ -73,29 +73,26 @@
       @if (people.length) {
         <ul class="card divide-y divide-line">
           @for (p of people; track p.id) {
-            <li class="flex items-center gap-4 px-5 py-4">
-              <a [routerLink]="['/people', p.id]"><app-avatar [name]="p.name" [src]="p.pictureUrl" /></a>
-              <div class="min-w-0 flex-1">
-                <a [routerLink]="['/people', p.id]" class="font-medium hover:underline">{{ p.name }}</a>
-                <p class="truncate text-sm text-ink-2">
-                  {{ p.headline }}
-                  @if (p.location) {
-                    <span class="text-ink-3"> · {{ p.location }}</span>
-                  }
-                </p>
-              </div>
-              @switch (p.relation) {
-                @case ('OUTGOING') {
-                  <span class="chip">Request sent</span>
-                }
-                @case ('INCOMING') {
+            @if (p.relation != 'OUTGOING') {
+              <li class="flex items-center gap-4 px-5 py-4">
+                <a [routerLink]="['/people', p.id]"><app-avatar [name]="p.name" [src]="p.pictureUrl" /></a>
+                <div class="min-w-0 flex-1">
+                  <a [routerLink]="['/people', p.id]" class="font-medium hover:underline">{{ p.name }}</a>
+                  <p class="truncate text-sm text-ink-2">
+                    {{ p.headline }}
+                    @if (p.location) {
+                      <span class="text-ink-3"> · {{ p.location }}</span>
+                    }
+                  </p>
+                </div>
+                @if (p.relation == 'INCOMING') {
                   <button class="btn btn-primary btn-sm" (click)="accept(p.connectionId!)">Accept</button>
                 }
-                @default {
+                @else {
                   <button class="btn btn-outline btn-sm" (click)="connect(p)">Connect</button>
                 }
-              }
-            </li>
+              </li>
+            }
           }
         </ul>
       } @else {
