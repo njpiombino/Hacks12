@@ -17,6 +17,11 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      # Resumes are capped at 5 MB in ResumeService; this leaves room for the rest of the request.
+      max-file-size: 6MB
+      max-request-size: 6MB
   jpa:
     hibernate:
       # Flyway owns the schema (src/main/resources/db/migration); Hibernate only checks it matches the entities.

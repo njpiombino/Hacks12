@@ -8,10 +8,11 @@ import { Meeting, Note, Person } from '../../core/models';
 import { Avatar } from '../../shared/avatar';
 import { MeetingDialog } from '../../shared/meeting-dialog';
 import { MeetingStatus } from '../../shared/meeting-status';
+import { ResumeLink } from '../../shared/resume-link';
 
 @Component({
   selector: 'app-person',
-  imports: [RouterLink, FormsModule, DatePipe, Avatar, MeetingDialog, MeetingStatus],
+  imports: [RouterLink, FormsModule, DatePipe, Avatar, MeetingDialog, MeetingStatus, ResumeLink],
   templateUrl: './person.html',
 })
 export class PersonPage {

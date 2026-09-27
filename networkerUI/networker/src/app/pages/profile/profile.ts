@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,12 +7,14 @@ import { Api } from '../../core/api';
 import { ProfileUpdate } from '../../core/models';
 import { Session } from '../../core/session';
 import { Avatar } from '../../shared/avatar';
+import { ResumeLink } from '../../shared/resume-link';
 
 const MAX_PHOTO_SIDE = 480;
+const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, Avatar],
+  imports: [DatePipe, FormsModule, RouterLink, Avatar, ResumeLink],
   templateUrl: './profile.html',
 })
 export class Profile {
@@ -40,6 +43,8 @@ export class Profile {
   protected readonly photoError = signal<string | null>(null);
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal<string | null>(null);
+  protected readonly resumeBusy = signal(false);
+  protected readonly resumeError = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -96,6 +101,52 @@ export class Profile {
 
   protected previewInterests() {
     return this.parseInterests(this.interestsText);
+  }
+
+  protected onResumeSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      this.resumeError.set('Please choose a PDF.');
+      return;
+    }
+    if (file.size > MAX_RESUME_BYTES) {
+      this.resumeError.set(`That file is ${this.fileSize(file.size)}; resumes can be up to 5 MB.`);
+      return;
+    }
+    this.resumeBusy.set(true);
+    this.resumeError.set(null);
+    this.api.uploadResume(file).subscribe({
+      next: (me) => {
+        this.session.me.set(me);
+        this.resumeBusy.set(false);
+      },
+      error: (e) => {
+        this.resumeBusy.set(false);
+        this.resumeError.set(e.error?.detail ?? "Couldn't upload that file.");
+      },
+    });
+  }
+
+  protected removeResume() {
+    if (!confirm('Remove your resume? Your connections will no longer be able to see it.')) return;
+    this.resumeBusy.set(true);
+    this.api.deleteResume().subscribe({
+      next: (me) => {
+        this.session.me.set(me);
+        this.resumeBusy.set(false);
+      },
+      error: () => {
+        this.resumeBusy.set(false);
+        this.resumeError.set("Couldn't remove it. Try again?");
+      },
+    });
+  }
+
+  protected fileSize(bytes: number) {
+    return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   }
 
   protected onPhotoSelected(event: Event) {

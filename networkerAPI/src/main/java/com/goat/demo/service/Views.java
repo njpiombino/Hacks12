@@ -21,9 +21,13 @@ public final class Views {
 		boolean showEmail = isSelf || (relation == Relation.CONNECTED && !p.isHideEmail());
 		// Location can be hidden from everyone but yourself.
 		boolean showLocation = isSelf || !p.isHideLocation();
+		// Resumes, like email, are for connections only.
+		boolean showResume = p.hasResume() && (isSelf || relation == Relation.CONNECTED);
+		Dto.ResumeInfo resume = showResume
+				? new Dto.ResumeInfo(p.getResumeFileName(), p.getResumeSize(), p.getResumeUploadedAt()) : null;
 		return new Dto.Person(p.getId(), p.getName(), p.getHeadline(), showLocation ? p.getLocation() : null,
 				p.getBio(), showEmail ? p.getEmail() : null, p.getPictureUrl(), p.getPortfolioUrl(), p.getInterests(),
-				p.isHideLocation(), p.isHideEmail(), relation, connectionId);
+				p.isHideLocation(), p.isHideEmail(), relation, connectionId, resume);
 	}
 
 	public static Dto.PersonSummary summary(Profile p) {

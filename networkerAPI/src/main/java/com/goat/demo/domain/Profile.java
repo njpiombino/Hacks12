@@ -59,6 +59,13 @@ public class Profile {
 	@Column(nullable = false)
 	private boolean hideEmail = false;
 
+	/** Details of the uploaded resume; the file itself lives in {@link Resume}. Null when there isn't one. */
+	private String resumeFileName;
+
+	private Integer resumeSize;
+
+	private Instant resumeUploadedAt;
+
 	@Column(nullable = false)
 	private Instant createdAt = Instant.now();
 
@@ -159,6 +166,34 @@ public class Profile {
 
 	public void setHideEmail(boolean hideEmail) {
 		this.hideEmail = hideEmail;
+	}
+
+	public boolean hasResume() {
+		return resumeFileName != null;
+	}
+
+	public String getResumeFileName() {
+		return resumeFileName;
+	}
+
+	public Integer getResumeSize() {
+		return resumeSize;
+	}
+
+	public Instant getResumeUploadedAt() {
+		return resumeUploadedAt;
+	}
+
+	public void setResume(String fileName, int size) {
+		this.resumeFileName = fileName;
+		this.resumeSize = size;
+		this.resumeUploadedAt = Instant.now();
+	}
+
+	public void clearResume() {
+		this.resumeFileName = null;
+		this.resumeSize = null;
+		this.resumeUploadedAt = null;
 	}
 
 	public Instant getCreatedAt() {
