@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
 import { environment } from '../../environments/environment';
-import { Connections, Meeting, MeetingRequest, Note, Person, ProfileUpdate } from './models';
+import { AppNotification, Connections, Meeting, MeetingRequest, Note, Person, ProfileUpdate } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -97,5 +97,13 @@ export class Api {
   /** Declining cancels the meeting for both people. */
   declineMeeting(id: number) {
     return this.http.post<void>(`${this.base}/meetings/${id}/decline`, {});
+  }
+
+  notifications() {
+    return this.http.get<AppNotification[]>(`${this.base}/notifications`);
+  }
+
+  markNotificationsRead() {
+    return this.http.post<void>(`${this.base}/notifications/read`, {});
   }
 }

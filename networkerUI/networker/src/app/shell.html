@@ -17,7 +17,11 @@
       }
     </nav>
 
-    <div class="relative ml-auto">
+    @if (session.me()) {
+      <app-notification-bell class="-mr-3 ml-auto" />
+    }
+
+    <div class="relative" [class.ml-auto]="!session.me()">
       @if (session.me(); as me) {
         <button
           class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-sunken"

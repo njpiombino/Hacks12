@@ -46,6 +46,16 @@ public final class Dto {
 			String description, boolean mine, PersonSummary with, InviteStatus inviteStatus) {
 	}
 
+	/**
+	 * Something the other person did to a meeting. {@code type} is INVITED, UPDATED, CANCELLED, ACCEPTED or
+	 * DECLINED; for UPDATED, {@code changes} lists any of TIME, PLACE and TITLE. The title, time and place are as
+	 * they were right after the change.
+	 */
+	public record NotificationView(Long id, String type, PersonSummary actor, Long meetingId, String title,
+			String previousTitle, Instant startsAt, String location, List<String> changes, Instant createdAt,
+			boolean read) {
+	}
+
 	public record ProfileUpdate(@NotBlank @Size(max = 120) String name, @Size(max = 160) String headline,
 			@Size(max = 120) String location, @Size(max = 2000) String bio,
 			@Size(max = 2_000_000) String pictureUrl, @Size(max = 300) String portfolioUrl, List<String> interests,

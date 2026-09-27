@@ -3,10 +3,11 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { Session } from './core/session';
 import { Avatar } from './shared/avatar';
+import { NotificationBell } from './shared/notification-bell';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Avatar],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Avatar, NotificationBell],
   templateUrl: './shell.html',
 })
 export class Shell {

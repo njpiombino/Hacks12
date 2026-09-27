@@ -2,6 +2,7 @@ package com.goat.demo.service;
 
 import com.goat.demo.domain.Meeting;
 import com.goat.demo.domain.Note;
+import com.goat.demo.domain.Notification;
 import com.goat.demo.domain.Profile;
 import com.goat.demo.web.Dto;
 import com.goat.demo.web.Dto.Relation;
@@ -37,6 +38,12 @@ public final class Views {
 		Dto.InviteStatus status = m.getInviteStatus() == null ? null : Dto.InviteStatus.valueOf(m.getInviteStatus().name());
 		return new Dto.MeetingView(m.getId(), m.getTitle(), m.getStartsAt(), m.getEndsAt(), m.getLocation(),
 				m.getDescription(), mine, summary(with), status);
+	}
+
+	public static Dto.NotificationView notification(Notification n) {
+		return new Dto.NotificationView(n.getId(), n.getType().name(), summary(n.getActor()), n.getMeetingId(),
+				n.getTitle(), n.getPreviousTitle(), n.getStartsAt(), n.getLocation(),
+				n.getChanges().stream().map(Enum::name).toList(), n.getCreatedAt(), n.getReadAt() != null);
 	}
 
 }
