@@ -5,13 +5,21 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
 
+import com.goat.demo.domain.Connection;
 import com.goat.demo.domain.Profile;
+import com.goat.demo.repository.ConnectionRepository;
 import com.goat.demo.repository.ProfileRepository;
 
-/** Seeds a few sample people so a fresh install isn't empty. They auto-accept connection requests. */
+/**
+ * Seeds a few sample people so a fresh install isn't empty. A couple of them send each newcomer a
+ * connection request, so there's someone to accept and meet with. Requests sent to them stay pending.
+ */
 @Component
 @ConditionalOnBooleanProperty("app.demo-data")
 public class DemoData implements ApplicationRunner {
+
+	/** Sample people who reach out to every new user. */
+	private static final String[] WELCOMERS = { "demo|4", "demo|5" };
 
 	private record Sample(String name, String headline, String location, String bio) {
 	}
@@ -30,8 +38,18 @@ public class DemoData implements ApplicationRunner {
 
 	private final ProfileRepository profiles;
 
-	public DemoData(ProfileRepository profiles) {
+	private final ConnectionRepository connections;
+
+	public DemoData(ProfileRepository profiles, ConnectionRepository connections) {
 		this.profiles = profiles;
+		this.connections = connections;
+	}
+
+	/** Has the welcoming sample people send a connection request to someone who just signed up. */
+	public void welcome(Profile newcomer) {
+		for (String auth0Id : WELCOMERS) {
+			profiles.findByAuth0Id(auth0Id).ifPresent(p -> connections.save(new Connection(p, newcomer)));
+		}
 	}
 
 	@Override
