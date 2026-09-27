@@ -11,7 +11,10 @@
         <input id="p-name" name="name" class="input" [(ngModel)]="form.name" required maxlength="120" />
       </div>
       <div>
-        <label class="label" for="p-headline">Headline</label>
+        <div class="flex items-baseline justify-between">
+          <label class="label" for="p-headline">Headline</label>
+          <span class="text-xs text-ink-3">{{ form.headline?.length ?? 0 }}/160</span>
+        </div>
         <input
           id="p-headline"
           name="headline"
@@ -24,9 +27,16 @@
       <div>
         <label class="label" for="p-location">Location</label>
         <input id="p-location" name="location" class="input" [(ngModel)]="form.location" maxlength="120" placeholder="Williamsburg, VA" />
+        <label class="mt-2 flex items-center gap-2 text-sm text-ink-2">
+          <input type="checkbox" name="hideLocation" [(ngModel)]="form.hideLocation" />
+          Hide my location from everyone but me
+        </label>
       </div>
       <div>
-        <label class="label" for="p-bio">About you</label>
+        <div class="flex items-baseline justify-between">
+          <label class="label" for="p-bio">About you</label>
+          <span class="text-xs text-ink-3">{{ form.bio?.length ?? 0 }}/2000</span>
+        </div>
         <textarea
           id="p-bio"
           name="bio"
@@ -37,10 +47,59 @@
           placeholder="What are you into? What could someone ask you about?"
         ></textarea>
       </div>
+
       <div>
-        <label class="label" for="p-picture">Photo URL</label>
-        <input id="p-picture" name="pictureUrl" class="input" [(ngModel)]="form.pictureUrl" maxlength="1000" placeholder="https://…" />
+        <label class="label" for="p-picture">Photo</label>
+        <div class="flex items-center gap-3">
+          <app-avatar [name]="form.name" [src]="form.pictureUrl" size="md" />
+          <label class="btn btn-outline btn-sm cursor-pointer">
+            Upload a photo
+            <input type="file" accept="image/*" class="hidden" (change)="onPhotoSelected($event)" />
+          </label>
+          @if (form.pictureUrl) {
+            <button type="button" class="btn btn-ghost btn-sm" (click)="form.pictureUrl = ''">Remove</button>
+          }
+        </div>
+        @if (photoError(); as perr) {
+          <p class="mt-1 text-sm text-clay">{{ perr }}</p>
+        }
+        <input
+          id="p-picture"
+          name="pictureUrl"
+          class="input mt-2"
+          [(ngModel)]="form.pictureUrl"
+          placeholder="…or paste an image URL"
+        />
       </div>
+
+      <div>
+        <label class="label" for="p-portfolio">GitHub / Portfolio</label>
+        <input id="p-portfolio" name="portfolioUrl" class="input" [(ngModel)]="form.portfolioUrl" maxlength="300" placeholder="github.com/… or yoursite.com" />
+      </div>
+
+      <div>
+        <label class="label" for="p-interests">Interests</label>
+        <input
+          id="p-interests"
+          name="interestsText"
+          class="input"
+          [(ngModel)]="interestsText"
+          placeholder="design systems, half marathons, edtech"
+        />
+        <p class="mt-1 text-xs text-ink-3">Comma-separated. Up to 15.</p>
+        @if (previewInterests().length) {
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            @for (tag of previewInterests(); track tag) {
+              <span class="chip">{{ tag }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <label class="flex items-center gap-2 text-sm text-ink-2">
+        <input type="checkbox" name="hideEmail" [(ngModel)]="form.hideEmail" />
+        Hide my email even from connections
+      </label>
 
       @if (error(); as err) {
         <p class="text-sm text-clay">{{ err }}</p>
@@ -60,15 +119,30 @@
         <app-avatar [name]="form.name" [src]="form.pictureUrl" size="lg" />
         <p class="mt-4 font-display text-2xl font-semibold leading-tight">{{ form.name || 'Your name' }}</p>
         <p class="mt-1 text-ink-2">{{ form.headline || 'Your headline' }}</p>
-        @if (form.location) {
+        @if (form.location && !form.hideLocation) {
           <p class="mt-2 text-sm text-ink-3">📍 {{ form.location }}</p>
         }
         @if (form.bio) {
           <p class="mt-4 line-clamp-5 whitespace-pre-line text-sm leading-relaxed">{{ form.bio }}</p>
         }
+        @if (previewInterests().length) {
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            @for (tag of previewInterests(); track tag) {
+              <span class="chip">{{ tag }}</span>
+            }
+          </div>
+        }
+        @if (form.portfolioUrl) {
+          <div class="mt-3 flex flex-wrap gap-3 text-sm">
+            <span class="text-forest">GitHub / Portfolio</span>
+          </div>
+        }
       </div>
       @if (session.me(); as me) {
-        <a [routerLink]="['/people', me.id]" class="mt-3 block text-center text-sm text-ink-2 hover:text-ink">View your public page →</a>
+        <div class="mt-3 flex items-center justify-center gap-3 text-sm">
+          <a [routerLink]="['/people', me.id]" class="text-ink-2 hover:text-ink">View your public page →</a>
+          <button type="button" class="text-ink-2 hover:text-ink" (click)="copyLink()">{{ copied() ? 'Copied!' : 'Copy link' }}</button>
+        </div>
       }
     </aside>
   </div>

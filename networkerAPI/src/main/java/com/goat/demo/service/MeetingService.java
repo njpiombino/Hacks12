@@ -2,6 +2,7 @@ package com.goat.demo.service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class MeetingService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<Dto.MeetingView> with(Profile me, Long otherId) {
+	public List<Dto.MeetingView> with(Profile me, UUID otherId) {
 		return meetings.findWith(me, profiles.get(otherId)).stream().map(m -> Views.meeting(m, me)).toList();
 	}
 

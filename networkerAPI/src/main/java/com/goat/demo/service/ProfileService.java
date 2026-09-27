@@ -1,5 +1,8 @@
 package com.goat.demo.service;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,7 @@ public class ProfileService {
 		return profiles.findByAuth0Id(jwt.getSubject()).orElseGet(() -> profiles.save(new Profile(jwt.getSubject())));
 	}
 
-	public Profile get(Long id) {
+	public Profile get(UUID id) {
 		return profiles.findById(id)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No such person"));
 	}
@@ -37,7 +40,24 @@ public class ProfileService {
 		me.setLocation(blankToNull(update.location()));
 		me.setBio(blankToNull(update.bio()));
 		me.setPictureUrl(blankToNull(update.pictureUrl()));
+		me.setPortfolioUrl(blankToNull(update.portfolioUrl()));
+		me.setInterests(cleanInterests(update.interests()));
+		me.setHideLocation(update.hideLocation());
+		me.setHideEmail(update.hideEmail());
 		return profiles.save(me);
+	}
+
+	/** Trims, drops blanks/duplicates, and caps how many interests a profile can have. */
+	private static List<String> cleanInterests(List<String> raw) {
+		if (raw == null) {
+			return List.of();
+		}
+		return raw.stream()
+			.filter(s -> s != null && !s.isBlank())
+			.map(s -> s.strip().length() > 40 ? s.strip().substring(0, 40) : s.strip())
+			.distinct()
+			.limit(15)
+			.toList();
 	}
 
 	/** Fills in any empty fields from the identity provider, without overwriting what the user wrote. */

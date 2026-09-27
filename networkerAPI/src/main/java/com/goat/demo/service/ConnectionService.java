@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -50,8 +51,8 @@ public class ConnectionService {
 
 	/** Maps every person the user has any connection with to that connection, for relation lookups. */
 	@Transactional(readOnly = true)
-	public Map<Long, Connection> byOtherPerson(Profile me) {
-		Map<Long, Connection> map = new HashMap<>();
+	public Map<UUID, Connection> byOtherPerson(Profile me) {
+		Map<UUID, Connection> map = new HashMap<>();
 		for (Connection c : connections.findAllInvolving(me)) {
 			map.put(c.other(me).getId(), c);
 		}

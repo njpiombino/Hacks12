@@ -32,7 +32,7 @@ export class MeetingDialog implements OnInit {
     date: '',
     start: '10:00',
     end: '10:30',
-    attendeeId: null as number | null,
+    attendeeId: null as string | null,
     location: '',
     description: '',
   };

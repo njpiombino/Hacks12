@@ -2,6 +2,7 @@ package com.goat.demo.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.goat.demo.domain.Profile;
 
-public interface ProfileRepository extends JpaRepository<Profile, Long> {
+public interface ProfileRepository extends JpaRepository<Profile, UUID> {
 
 	Optional<Profile> findByAuth0Id(String auth0Id);
 
@@ -21,6 +22,6 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
 			              or lower(p.location) like lower(concat('%', :q, '%')))
 			order by p.name
 			""")
-	List<Profile> search(@Param("q") String q, @Param("excludeId") Long excludeId);
+	List<Profile> search(@Param("q") String q, @Param("excludeId") UUID excludeId);
 
 }

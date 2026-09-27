@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,7 +48,7 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$.name").value("Alice Park"))
 			.andExpect(jsonPath("$.relation").value("SELF"));
 
-		long maya = profiles.findByAuth0Id("demo|1").orElseThrow().getId();
+		UUID maya = profiles.findByAuth0Id("demo|1").orElseThrow().getId();
 
 		mvc.perform(as("auth0|alice", get("/api/people").param("q", "maya")))
 			.andExpect(jsonPath("$", hasSize(1)))
@@ -54,7 +56,7 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$[0].email").value(nullValue()));
 
 		// Demo people accept right away.
-		mvc.perform(as("auth0|alice", post("/api/connections")).content("{\"profileId\":" + maya + "}"))
+		mvc.perform(as("auth0|alice", post("/api/connections")).content("{\"profileId\":\"" + maya + "\"}"))
 			.andExpect(jsonPath("$.connected", hasSize(1)))
 			.andExpect(jsonPath("$.connected[0].person.email").value("maya.okafor@example.com"));
 
@@ -63,7 +65,7 @@ class ApiFlowTests {
 			.andExpect(status().isOk());
 
 		mvc.perform(as("auth0|alice", post("/api/meetings")).content("""
-				{"title":"Coffee","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeId":%d}"""
+				{"title":"Coffee","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeId":"%s"}"""
 			.formatted(maya))).andExpect(jsonPath("$.with.name").value("Maya Okafor"));
 
 		mvc.perform(as("auth0|alice", get("/api/meetings").param("from", "2030-01-01T00:00:00Z")
@@ -75,7 +77,7 @@ class ApiFlowTests {
 
 		// Can't invite someone you're not connected to.
 		mvc.perform(as("auth0|bob", post("/api/meetings")).content("""
-				{"title":"Hi","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeId":%d}"""
+				{"title":"Hi","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeId":"%s"}"""
 			.formatted(maya)))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.detail").value("You can only invite your connections"));
@@ -85,9 +87,9 @@ class ApiFlowTests {
 	void peopleCanRequestAndAccept() throws Exception {
 		mvc.perform(as("auth0|carol", post("/api/me/sync")).content("{\"name\":\"Carol\"}"));
 		mvc.perform(as("auth0|dave", post("/api/me/sync")).content("{\"name\":\"Dave\"}"));
-		long dave = profiles.findByAuth0Id("auth0|dave").orElseThrow().getId();
+		UUID dave = profiles.findByAuth0Id("auth0|dave").orElseThrow().getId();
 
-		mvc.perform(as("auth0|carol", post("/api/connections")).content("{\"profileId\":" + dave + "}"))
+		mvc.perform(as("auth0|carol", post("/api/connections")).content("{\"profileId\":\"" + dave + "\"}"))
 			.andExpect(jsonPath("$.outgoing", hasSize(1)));
 
 		String body = mvc.perform(as("auth0|dave", get("/api/connections")))

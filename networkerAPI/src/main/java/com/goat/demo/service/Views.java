@@ -13,10 +13,14 @@ public final class Views {
 	}
 
 	public static Dto.Person person(Profile p, Relation relation, Long connectionId) {
-		// Email is only shared with people you're actually connected to.
-		boolean showEmail = relation == Relation.CONNECTED || relation == Relation.SELF;
-		return new Dto.Person(p.getId(), p.getName(), p.getHeadline(), p.getLocation(), p.getBio(),
-				showEmail ? p.getEmail() : null, p.getPictureUrl(), relation, connectionId);
+		boolean isSelf = relation == Relation.SELF;
+		// Email is only shared with people you're actually connected to, and never if you've hidden it.
+		boolean showEmail = isSelf || (relation == Relation.CONNECTED && !p.isHideEmail());
+		// Location can be hidden from everyone but yourself.
+		boolean showLocation = isSelf || !p.isHideLocation();
+		return new Dto.Person(p.getId(), p.getName(), p.getHeadline(), showLocation ? p.getLocation() : null,
+				p.getBio(), showEmail ? p.getEmail() : null, p.getPictureUrl(), p.getPortfolioUrl(), p.getInterests(),
+				p.isHideLocation(), p.isHideEmail(), relation, connectionId);
 	}
 
 	public static Dto.PersonSummary summary(Profile p) {

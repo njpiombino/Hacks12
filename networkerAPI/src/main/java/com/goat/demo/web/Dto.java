@@ -2,6 +2,7 @@ package com.goat.demo.web;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,11 +19,12 @@ public final class Dto {
 		SELF, NONE, OUTGOING, INCOMING, CONNECTED
 	}
 
-	public record Person(Long id, String name, String headline, String location, String bio, String email,
-			String pictureUrl, Relation relation, Long connectionId) {
+	public record Person(UUID id, String name, String headline, String location, String bio, String email,
+			String pictureUrl, String portfolioUrl, List<String> interests, boolean hideLocation, boolean hideEmail,
+			Relation relation, Long connectionId) {
 	}
 
-	public record PersonSummary(Long id, String name, String pictureUrl) {
+	public record PersonSummary(UUID id, String name, String pictureUrl) {
 	}
 
 	public record ConnectionItem(Long id, Person person, Instant since) {
@@ -40,14 +42,16 @@ public final class Dto {
 	}
 
 	public record ProfileUpdate(@NotBlank @Size(max = 120) String name, @Size(max = 160) String headline,
-			@Size(max = 120) String location, @Size(max = 2000) String bio, @Size(max = 1000) String pictureUrl) {
+			@Size(max = 120) String location, @Size(max = 2000) String bio,
+			@Size(max = 2_000_000) String pictureUrl, @Size(max = 300) String portfolioUrl, List<String> interests,
+			boolean hideLocation, boolean hideEmail) {
 	}
 
 	/** Details from the Auth0 ID token, used to fill in a brand-new profile. */
 	public record ProfileSync(String name, String email, String pictureUrl) {
 	}
 
-	public record ConnectRequest(@NotNull Long profileId) {
+	public record ConnectRequest(@NotNull UUID profileId) {
 	}
 
 	public record NoteRequest(@NotBlank @Size(max = 10000) String body) {
@@ -55,7 +59,7 @@ public final class Dto {
 
 	public record MeetingRequest(@NotBlank @Size(max = 200) String title, @NotNull Instant startsAt,
 			@NotNull Instant endsAt, @Size(max = 200) String location, @Size(max = 2000) String description,
-			Long attendeeId) {
+			UUID attendeeId) {
 	}
 
 }

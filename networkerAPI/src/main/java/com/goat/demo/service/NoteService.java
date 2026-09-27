@@ -1,6 +1,7 @@
 package com.goat.demo.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,7 @@ public class NoteService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<Dto.NoteView> about(Profile me, Long subjectId) {
+	public List<Dto.NoteView> about(Profile me, UUID subjectId) {
 		return notes.findByAuthorAndSubjectOrderByCreatedAtDesc(me, profiles.get(subjectId))
 			.stream()
 			.map(Views::note)
@@ -39,7 +40,7 @@ public class NoteService {
 		return notes.findRecent(me, Limit.of(limit)).stream().map(Views::note).toList();
 	}
 
-	public Dto.NoteView create(Profile me, Long subjectId, Dto.NoteRequest request) {
+	public Dto.NoteView create(Profile me, UUID subjectId, Dto.NoteRequest request) {
 		Profile subject = profiles.get(subjectId);
 		if (subject.getId().equals(me.getId())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notes are for other people");

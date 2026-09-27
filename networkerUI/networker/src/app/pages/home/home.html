@@ -9,14 +9,17 @@
   </div>
 </section>
 
-@if (session.me(); as me) {
-  @if (!me.headline) {
-    <a routerLink="/profile" class="card mb-8 flex items-center gap-4 border-dashed px-5 py-4 transition-colors hover:border-ink-3">
+@if (session.me() && completeness().pct < 100) {
+  <a routerLink="/profile" class="card mb-8 block px-5 py-4 transition-colors hover:border-ink-3">
+    <div class="flex items-center gap-4">
       <span class="hand text-2xl">psst —</span>
-      <span class="text-sm text-ink-2">Add a headline and a few lines about yourself so people know who's knocking.</span>
-      <span class="ml-auto text-sm font-medium text-forest">Finish your profile →</span>
-    </a>
-  }
+      <span class="text-sm text-ink-2">Your profile is {{ completeness().pct }}% filled out. A few more details help people know who's knocking.</span>
+      <span class="ml-auto shrink-0 text-sm font-medium text-forest">Finish your profile →</span>
+    </div>
+    <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-sunken">
+      <div class="h-full rounded-full bg-forest transition-all" [style.width.%]="completeness().pct"></div>
+    </div>
+  </a>
 }
 
 <div class="grid gap-8 lg:grid-cols-[1.5fr_1fr]">

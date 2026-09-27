@@ -1,12 +1,18 @@
 package com.goat.demo.domain;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 @Entity
@@ -14,8 +20,8 @@ import jakarta.persistence.Table;
 public class Profile {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	@GeneratedValue
+	private UUID id;
 
 	/** The Auth0 subject ("sub" claim) this profile belongs to. */
 	@Column(nullable = false, unique = true)
@@ -32,8 +38,26 @@ public class Profile {
 
 	private String email;
 
-	@Column(length = 1000)
+	/** A URL, or a data: URI for an uploaded photo. */
+	@Column(columnDefinition = "text")
 	private String pictureUrl;
+
+	/** A GitHub or personal portfolio link. */
+	@Column(length = 300)
+	private String portfolioUrl;
+
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "profile_interests", joinColumns = @JoinColumn(name = "profile_id"))
+	@Column(name = "interest", length = 40)
+	private List<String> interests = new ArrayList<>();
+
+	/** When true, location is hidden from everyone but yourself. */
+	@Column(nullable = false)
+	private boolean hideLocation = false;
+
+	/** When true, email is hidden even from accepted connections. */
+	@Column(nullable = false)
+	private boolean hideEmail = false;
 
 	@Column(nullable = false)
 	private Instant createdAt = Instant.now();
@@ -49,7 +73,7 @@ public class Profile {
 		return auth0Id.startsWith("demo|");
 	}
 
-	public Long getId() {
+	public UUID getId() {
 		return id;
 	}
 
@@ -103,6 +127,38 @@ public class Profile {
 
 	public void setPictureUrl(String pictureUrl) {
 		this.pictureUrl = pictureUrl;
+	}
+
+	public String getPortfolioUrl() {
+		return portfolioUrl;
+	}
+
+	public void setPortfolioUrl(String portfolioUrl) {
+		this.portfolioUrl = portfolioUrl;
+	}
+
+	public List<String> getInterests() {
+		return interests;
+	}
+
+	public void setInterests(List<String> interests) {
+		this.interests = interests;
+	}
+
+	public boolean isHideLocation() {
+		return hideLocation;
+	}
+
+	public void setHideLocation(boolean hideLocation) {
+		this.hideLocation = hideLocation;
+	}
+
+	public boolean isHideEmail() {
+		return hideEmail;
+	}
+
+	public void setHideEmail(boolean hideEmail) {
+		this.hideEmail = hideEmail;
 	}
 
 	public Instant getCreatedAt() {

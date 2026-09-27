@@ -25,7 +25,7 @@ export class Api {
     return this.http.get<Person[]>(`${this.base}/people`, { params: { q } });
   }
 
-  person(id: number) {
+  person(id: string) {
     return this.http.get<Person>(`${this.base}/people/${id}`);
   }
 
@@ -33,7 +33,7 @@ export class Api {
     return this.http.get<Connections>(`${this.base}/connections`);
   }
 
-  connect(profileId: number) {
+  connect(profileId: string) {
     return this.http.post<Connections>(`${this.base}/connections`, { profileId });
   }
 
@@ -45,7 +45,7 @@ export class Api {
     return this.http.delete<Connections>(`${this.base}/connections/${id}`);
   }
 
-  notesAbout(personId: number) {
+  notesAbout(personId: string) {
     return this.http.get<Note[]>(`${this.base}/people/${personId}/notes`);
   }
 
@@ -53,7 +53,7 @@ export class Api {
     return this.http.get<Note[]>(`${this.base}/notes/recent`);
   }
 
-  addNote(personId: number, body: string) {
+  addNote(personId: string, body: string) {
     return this.http.post<Note>(`${this.base}/people/${personId}/notes`, { body });
   }
 
@@ -70,7 +70,7 @@ export class Api {
     return this.http.get<Meeting[]>(`${this.base}/meetings`, { params });
   }
 
-  meetingsWith(personId: number) {
+  meetingsWith(personId: string) {
     return this.http.get<Meeting[]>(`${this.base}/people/${personId}/meetings`);
   }
 

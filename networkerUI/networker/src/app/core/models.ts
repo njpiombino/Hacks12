@@ -1,19 +1,23 @@
 export type Relation = 'SELF' | 'NONE' | 'OUTGOING' | 'INCOMING' | 'CONNECTED';
 
 export interface Person {
-  id: number;
+  id: string;
   name: string | null;
   headline: string | null;
   location: string | null;
   bio: string | null;
   email: string | null;
   pictureUrl: string | null;
+  portfolioUrl: string | null;
+  interests: string[];
+  hideLocation: boolean;
+  hideEmail: boolean;
   relation: Relation;
   connectionId: number | null;
 }
 
 export interface PersonSummary {
-  id: number;
+  id: string;
   name: string | null;
   pictureUrl: string | null;
 }
@@ -55,7 +59,7 @@ export interface MeetingRequest {
   endsAt: string;
   location: string | null;
   description: string | null;
-  attendeeId: number | null;
+  attendeeId: string | null;
 }
 
 export interface ProfileUpdate {
@@ -64,4 +68,8 @@ export interface ProfileUpdate {
   location: string | null;
   bio: string | null;
   pictureUrl: string | null;
+  portfolioUrl: string | null;
+  interests: string[];
+  hideLocation: boolean;
+  hideEmail: boolean;
 }

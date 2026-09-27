@@ -23,6 +23,18 @@
       @if (p.bio) {
         <p class="mt-4 max-w-2xl whitespace-pre-line leading-relaxed">{{ p.bio }}</p>
       }
+      @if (p.interests.length) {
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          @for (tag of p.interests; track tag) {
+            <span class="chip">{{ tag }}</span>
+          }
+        </div>
+      }
+      @if (p.portfolioUrl) {
+        <div class="mt-3 flex flex-wrap gap-4 text-sm">
+          <a [href]="toHref(p.portfolioUrl)" target="_blank" rel="noopener" class="text-forest hover:underline">GitHub / Portfolio</a>
+        </div>
+      }
     </div>
 
     <div class="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-end">

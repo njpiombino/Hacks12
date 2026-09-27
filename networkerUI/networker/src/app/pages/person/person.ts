@@ -36,10 +36,10 @@ export class PersonPage {
   protected readonly past = computed(() => this.meetings().filter((m) => Date.parse(m.endsAt) < this.now));
 
   constructor() {
-    effect(() => this.load(Number(this.id())));
+    effect(() => this.load(this.id()));
   }
 
-  private load(id: number) {
+  private load(id: string) {
     this.person.set(null);
     this.notFound.set(false);
     this.api.person(id).subscribe({
@@ -51,11 +51,11 @@ export class PersonPage {
   }
 
   private loadMeetings() {
-    this.api.meetingsWith(Number(this.id())).subscribe((m) => this.meetings.set(m));
+    this.api.meetingsWith(this.id()).subscribe((m) => this.meetings.set(m));
   }
 
   protected connect() {
-    this.api.connect(Number(this.id())).subscribe(() => this.refreshPerson());
+    this.api.connect(this.id()).subscribe(() => this.refreshPerson());
   }
 
   protected accept(connectionId: number) {
@@ -68,13 +68,13 @@ export class PersonPage {
   }
 
   private refreshPerson() {
-    this.api.person(Number(this.id())).subscribe((p) => this.person.set(p));
+    this.api.person(this.id()).subscribe((p) => this.person.set(p));
   }
 
   protected addNote() {
     const body = this.draft.trim();
     if (!body) return;
-    this.api.addNote(Number(this.id()), body).subscribe((n) => {
+    this.api.addNote(this.id(), body).subscribe((n) => {
       this.notes.update((list) => [n, ...list]);
       this.draft = '';
     });
@@ -103,5 +103,9 @@ export class PersonPage {
     this.dialogOpen.set(false);
     this.editingMeeting.set(null);
     this.loadMeetings();
+  }
+
+  protected toHref(url: string): string {
+    return /^https?:\/\//i.test(url) ? url : `https://${url}`;
   }
 }

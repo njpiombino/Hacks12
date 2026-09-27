@@ -26,3 +26,12 @@ replay_pid*
 
 .DS_Store
 .specstory/*
+
+# Claude Code local-only permission overrides (per-machine, not shared)
+.claude/settings.local.json
+settings.json
+
+# Local secrets, should any of these get created
+.env
+.env.*
+!.env.example

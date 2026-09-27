@@ -1,6 +1,7 @@
 package com.goat.demo.web;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -64,7 +65,7 @@ public class PeopleController {
 	}
 
 	@GetMapping("/people/{id}")
-	public Dto.Person person(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+	public Dto.Person person(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
 		Profile me = profiles.current(jwt);
 		Profile other = profiles.get(id);
 		if (other.getId().equals(me.getId())) {
@@ -75,18 +76,18 @@ public class PeopleController {
 	}
 
 	@GetMapping("/people/{id}/notes")
-	public List<Dto.NoteView> notesAbout(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+	public List<Dto.NoteView> notesAbout(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
 		return notes.about(profiles.current(jwt), id);
 	}
 
 	@PostMapping("/people/{id}/notes")
-	public Dto.NoteView addNote(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id,
+	public Dto.NoteView addNote(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id,
 			@Valid @RequestBody Dto.NoteRequest request) {
 		return notes.create(profiles.current(jwt), id, request);
 	}
 
 	@GetMapping("/people/{id}/meetings")
-	public List<Dto.MeetingView> meetingsWith(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+	public List<Dto.MeetingView> meetingsWith(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
 		return meetings.with(profiles.current(jwt), id);
 	}
 

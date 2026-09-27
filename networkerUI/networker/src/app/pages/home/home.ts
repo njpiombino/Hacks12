@@ -31,6 +31,15 @@ export class Home {
     return first ? `${part}, ${first}.` : `${part}.`;
   });
 
+  /** How filled-out the profile is, for the "finish your profile" nudge. */
+  protected readonly completeness = computed(() => {
+    const me = this.session.me();
+    const checks = me ? [!!me.headline, !!me.bio, !!me.location, me.interests.length > 0, !!me.portfolioUrl] : [];
+    const done = checks.filter(Boolean).length;
+    const total = checks.length || 5;
+    return { done, total, pct: Math.round((done / total) * 100) };
+  });
+
   protected readonly today = new Date();
 
   constructor() {
