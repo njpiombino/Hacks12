@@ -72,7 +72,7 @@ class ApiFlowTests {
 
 		// Meetings don't.
 		mvc.perform(as("auth0|alice", post("/api/meetings")).content("""
-				{"title":"Coffee","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeId":"%s"}"""
+				{"title":"Coffee","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeIds":["%s"]}"""
 			.formatted(maya)))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.detail").value("You can only invite your connections"));
@@ -94,8 +94,8 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$[?(@.name == 'Hana Kim')].relation").value("INCOMING"));
 
 		mvc.perform(as("auth0|alice", post("/api/meetings")).content("""
-				{"title":"Coffee","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeId":"%s"}"""
-			.formatted(tom))).andExpect(jsonPath("$.with.name").value("Tom Whitaker"));
+				{"title":"Coffee","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T15:30:00Z","attendeeIds":["%s"]}"""
+			.formatted(tom))).andExpect(jsonPath("$.attendees[0].person.name").value("Tom Whitaker"));
 
 		mvc.perform(as("auth0|alice", get("/api/meetings").param("from", "2030-01-01T00:00:00Z")
 			.param("to", "2030-02-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(1)));
@@ -116,7 +116,7 @@ class ApiFlowTests {
 
 		// Not connected until Dave says yes.
 		mvc.perform(as("auth0|carol", post("/api/meetings")).content("""
-				{"title":"Lunch","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T16:00:00Z","attendeeId":"%s"}"""
+				{"title":"Lunch","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T16:00:00Z","attendeeIds":["%s"]}"""
 			.formatted(dave))).andExpect(status().isBadRequest());
 
 		String body = mvc.perform(as("auth0|dave", get("/api/connections")))
@@ -129,10 +129,10 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$.connected[0].person.name").value("Carol"));
 
 		String lunch = mvc.perform(as("auth0|carol", post("/api/meetings")).content("""
-				{"title":"Lunch","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T16:00:00Z","attendeeId":"%s"}"""
+				{"title":"Lunch","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T16:00:00Z","attendeeIds":["%s"]}"""
 			.formatted(dave)))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.inviteStatus").value("PENDING"))
+			.andExpect(jsonPath("$.attendees[0].status").value("PENDING"))
 			.andReturn()
 			.getResponse()
 			.getContentAsString();
@@ -141,7 +141,7 @@ class ApiFlowTests {
 		// Dave has to answer; Carol can't answer for him.
 		mvc.perform(as("auth0|dave", get("/api/meetings/invitations")))
 			.andExpect(jsonPath("$", hasSize(1)))
-			.andExpect(jsonPath("$[0].with.name").value("Carol"));
+			.andExpect(jsonPath("$[0].organizer.name").value("Carol"));
 		mvc.perform(as("auth0|carol", post("/api/meetings/" + lunchId + "/accept"))).andExpect(status().isForbidden());
 		mvc.perform(as("auth0|dave", get("/api/notifications")))
 			.andExpect(jsonPath("$", hasSize(1)))
@@ -150,14 +150,14 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$[0].read").value(false));
 
 		mvc.perform(as("auth0|dave", post("/api/meetings/" + lunchId + "/accept")))
-			.andExpect(jsonPath("$.inviteStatus").value("ACCEPTED"));
+			.andExpect(jsonPath("$.attendees[0].status").value("ACCEPTED"));
 		mvc.perform(as("auth0|dave", get("/api/meetings/invitations"))).andExpect(jsonPath("$", hasSize(0)));
 		mvc.perform(as("auth0|carol", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("ACCEPTED"));
 
 		// Moving the meeting asks Dave again, and tells him what changed.
 		mvc.perform(as("auth0|carol", put("/api/meetings/" + lunchId)).content("""
-				{"title":"Lunch","startsAt":"2030-01-03T15:00:00Z","endsAt":"2030-01-03T16:00:00Z","attendeeId":"%s"}"""
-			.formatted(dave))).andExpect(jsonPath("$.inviteStatus").value("PENDING"));
+				{"title":"Lunch","startsAt":"2030-01-03T15:00:00Z","endsAt":"2030-01-03T16:00:00Z","attendeeIds":["%s"]}"""
+			.formatted(dave))).andExpect(jsonPath("$.attendees[0].status").value("PENDING"));
 		mvc.perform(as("auth0|dave", get("/api/notifications")))
 			.andExpect(jsonPath("$[0].type").value("UPDATED"))
 			.andExpect(jsonPath("$[0].changes", hasSize(1)))
@@ -165,7 +165,7 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$[0].startsAt").value("2030-01-03T15:00:00Z"));
 
 		mvc.perform(as("auth0|carol", put("/api/meetings/" + lunchId)).content("""
-				{"title":"Brunch","startsAt":"2030-01-03T15:00:00Z","endsAt":"2030-01-03T16:00:00Z","location":"The Hive","attendeeId":"%s"}"""
+				{"title":"Brunch","startsAt":"2030-01-03T15:00:00Z","endsAt":"2030-01-03T16:00:00Z","location":"The Hive","attendeeIds":["%s"]}"""
 			.formatted(dave)));
 		mvc.perform(as("auth0|dave", get("/api/notifications")))
 			.andExpect(jsonPath("$[0].changes", hasSize(2)))
@@ -192,7 +192,7 @@ class ApiFlowTests {
 
 		// The organizer cancelling tells the invitee.
 		String dinner = mvc.perform(as("auth0|carol", post("/api/meetings")).content("""
-				{"title":"Dinner","startsAt":"2030-01-05T23:00:00Z","endsAt":"2030-01-06T01:00:00Z","attendeeId":"%s"}"""
+				{"title":"Dinner","startsAt":"2030-01-05T23:00:00Z","endsAt":"2030-01-06T01:00:00Z","attendeeIds":["%s"]}"""
 			.formatted(dave))).andReturn().getResponse().getContentAsString();
 		mvc.perform(as("auth0|carol", delete("/api/meetings/" + JsonPath.read(dinner, "$.id"))))
 			.andExpect(status().isOk());
@@ -204,6 +204,86 @@ class ApiFlowTests {
 		// Nobody else can see or touch them.
 		mvc.perform(as("auth0|carol", get("/api/notifications")))
 			.andExpect(jsonPath("$[?(@.title == 'Dinner')]", hasSize(0)));
+	}
+
+	@Test
+	void groupMeetings() throws Exception {
+		UUID erin = signUp("auth0|erin", "Erin");
+		UUID frank = signUp("auth0|frank", "Frank");
+		UUID gina = signUp("auth0|gina", "Gina");
+		connect("auth0|erin", "Frank", frank);
+		connect("auth0|erin", "Gina", gina);
+
+		mvc.perform(as("auth0|erin", post("/api/meetings")).content("""
+				{"title":"Standup","startsAt":"2030-03-02T15:00:00Z","endsAt":"2030-03-02T15:30:00Z","attendeeIds":["%s"]}"""
+			.formatted(erin))).andExpect(status().isBadRequest());
+
+		String standup = mvc.perform(as("auth0|erin", post("/api/meetings")).content("""
+				{"title":"Standup","startsAt":"2030-03-02T15:00:00Z","endsAt":"2030-03-02T15:30:00Z","attendeeIds":["%s","%s"]}"""
+			.formatted(frank, gina)))
+			.andExpect(jsonPath("$.attendees", hasSize(2)))
+			.andExpect(jsonPath("$.attendees[?(@.status == 'PENDING')]", hasSize(2)))
+			.andExpect(jsonPath("$.myStatus").value(nullValue()))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		Object id = JsonPath.read(standup, "$.id");
+
+		// Each invitee sees the whole group and answers for themselves.
+		mvc.perform(as("auth0|gina", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("INVITED"));
+		mvc.perform(as("auth0|frank", post("/api/meetings/" + id + "/accept")))
+			.andExpect(jsonPath("$.organizer.name").value("Erin"))
+			.andExpect(jsonPath("$.myStatus").value("ACCEPTED"))
+			.andExpect(jsonPath("$.attendees[?(@.person.name == 'Gina')].status").value("PENDING"));
+
+		// One of several declining just drops them; it stays on everyone else's calendar.
+		mvc.perform(as("auth0|gina", post("/api/meetings/" + id + "/decline"))).andExpect(status().isOk());
+		mvc.perform(as("auth0|erin", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("DROPPED_OUT"));
+		mvc.perform(as("auth0|frank", get("/api/meetings").param("from", "2030-03-01T00:00:00Z")
+			.param("to", "2030-04-01T00:00:00Z")))
+			.andExpect(jsonPath("$", hasSize(1)))
+			.andExpect(jsonPath("$[0].attendees", hasSize(1)));
+		mvc.perform(as("auth0|gina", get("/api/meetings").param("from", "2030-03-01T00:00:00Z")
+			.param("to", "2030-04-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(0)));
+
+		// Renaming it and re-inviting Gina: Frank hears about the rename and keeps his yes, Gina is invited again.
+		mvc.perform(as("auth0|erin", put("/api/meetings/" + id)).content("""
+				{"title":"Planning","startsAt":"2030-03-02T15:00:00Z","endsAt":"2030-03-02T15:30:00Z","attendeeIds":["%s","%s"]}"""
+			.formatted(frank, gina)))
+			.andExpect(jsonPath("$.attendees[?(@.person.name == 'Frank')].status").value("ACCEPTED"))
+			.andExpect(jsonPath("$.attendees[?(@.person.name == 'Gina')].status").value("PENDING"));
+		mvc.perform(as("auth0|frank", get("/api/notifications")))
+			.andExpect(jsonPath("$[0].type").value("UPDATED"))
+			.andExpect(jsonPath("$[0].changes[0]").value("TITLE"));
+		mvc.perform(as("auth0|gina", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("INVITED"));
+
+		// Taking Gina off tells her it's cancelled for her.
+		mvc.perform(as("auth0|erin", put("/api/meetings/" + id)).content("""
+				{"title":"Planning","startsAt":"2030-03-02T15:00:00Z","endsAt":"2030-03-02T15:30:00Z","attendeeIds":["%s"]}"""
+			.formatted(frank))).andExpect(jsonPath("$.attendees", hasSize(1)));
+		mvc.perform(as("auth0|gina", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("CANCELLED"));
+
+		// When the last attendee declines, the meeting is cancelled for the organizer too.
+		mvc.perform(as("auth0|frank", post("/api/meetings/" + id + "/decline"))).andExpect(status().isOk());
+		mvc.perform(as("auth0|erin", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("DECLINED"));
+		mvc.perform(as("auth0|erin", get("/api/meetings").param("from", "2030-03-01T00:00:00Z")
+			.param("to", "2030-04-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(0)));
+	}
+
+	private UUID signUp(String sub, String name) throws Exception {
+		mvc.perform(as(sub, post("/api/me/sync")).content("{\"name\":\"" + name + "\"}"));
+		return profiles.findByAuth0Id(sub).orElseThrow().getId();
+	}
+
+	/** Has {@code from} send a request that the other person accepts. */
+	private void connect(String from, String toName, UUID to) throws Exception {
+		String fromName = profiles.findByAuth0Id(from).orElseThrow().getName();
+		String toSub = profiles.findById(to).orElseThrow().getAuth0Id();
+		mvc.perform(as(from, post("/api/connections")).content("{\"profileId\":\"" + to + "\"}"))
+			.andExpect(status().isOk());
+		String body = mvc.perform(as(toSub, get("/api/connections"))).andReturn().getResponse().getContentAsString();
+		mvc.perform(as(toSub, post("/api/connections/" + incomingFrom(body, fromName) + "/accept")))
+			.andExpect(jsonPath("$.connected[?(@.person.name == '" + fromName + "')]", hasSize(1)));
 	}
 
 	private static Object incomingFrom(String connectionsJson, String name) {
