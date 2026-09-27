@@ -23,7 +23,7 @@ const TINTS = ['#2f5d4e', '#b85c38', '#6b5b95', '#3d6e8f', '#8a6d2f', '#8f4a5c']
 export class Avatar {
   readonly name = input<string | null>(null);
   readonly src = input<string | null>(null);
-  readonly size = input<'sm' | 'md' | 'lg' | 'xl'>('md');
+  readonly size = input<'sm' | 'md' | 'lg' | 'xl' | 'hero'>('md');
 
   protected readonly initials = computed(() => {
     const parts = (this.name() ?? '?').trim().split(/\s+/);
@@ -44,6 +44,7 @@ export class Avatar {
         md: 'size-11 text-sm',
         lg: 'size-16 text-xl',
         xl: 'size-24 text-3xl',
+        hero: 'size-40 text-6xl',
       })[this.size()],
   );
 }

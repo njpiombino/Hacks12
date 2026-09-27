@@ -1,6 +1,7 @@
 <header class="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur">
   <div class="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-    <a routerLink="/" class="flex items-center gap-2">
+    <!-- Plain href (not routerLink) so the logo does a full reload back to home. -->
+    <a href="/" class="flex items-center gap-2" title="Reload and go home">
       <img src="logo.png" alt="Networker" class="h-8 w-auto" />
       <span class="hand hidden text-base sm:inline">people first</span>
     </a>

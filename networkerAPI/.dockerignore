@@ -1,0 +1,5 @@
+target/
+.idea/
+*.iml
+# Never bake database credentials into the image.
+src/main/resources/secrets.yaml
