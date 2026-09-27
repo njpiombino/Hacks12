@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +22,8 @@ public class ConnectionService {
 
 	private final ConnectionRepository connections;
 
-	private final boolean demoData;
-
-	public ConnectionService(ConnectionRepository connections,
-			@Value("${app.demo-data:false}") boolean demoData) {
+	public ConnectionService(ConnectionRepository connections) {
 		this.connections = connections;
-		this.demoData = demoData;
 	}
 
 	@Transactional(readOnly = true)
@@ -78,11 +73,7 @@ public class ConnectionService {
 			}
 			return c;
 		}
-		Connection c = new Connection(me, other);
-		if (demoData && other.isDemo()) {
-			c.accept();
-		}
-		return connections.save(c);
+		return connections.save(new Connection(me, other));
 	}
 
 	@Transactional

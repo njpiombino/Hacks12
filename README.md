@@ -39,7 +39,7 @@ Open http://localhost:4200.
 
 The database uses port 55432 rather than 5432 so it doesn't clash with any Postgres already installed on your machine. After a reboot, run `docker compose up -d` again.
 
-On first start, the API seeds five sample people who accept connection requests right away. That gives you someone to connect with, write notes about and invite to meetings. Set `DEMO_DATA=false` to turn this off.
+On first start, the API seeds five sample people. When you sign up, two of them (Tom and Hana) send you a connection request. Accept one and you have someone to invite to meetings. Sample people never accept requests you send them, so those stay pending. You can still write notes about anyone, connected or not. Set `DEMO_DATA=false` to turn this off.
 
 ## Configuration
 

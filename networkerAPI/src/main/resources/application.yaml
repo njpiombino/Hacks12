@@ -23,6 +23,6 @@ spring:
 
 app:
   cors-origins: ${CORS_ORIGINS:http://localhost:4200}
-  # Seeds a handful of sample people who auto-accept connection requests, so a
-  # brand-new install has someone to connect with. Turn off for real use.
+  # Seeds a handful of sample people, two of whom send each new user a connection
+  # request, so a brand-new install has someone to connect with. Turn off for real use.
   demo-data: ${DEMO_DATA:true}
