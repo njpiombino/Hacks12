@@ -38,6 +38,8 @@ export class Profile {
   protected readonly error = signal<string | null>(null);
   protected readonly copied = signal(false);
   protected readonly photoError = signal<string | null>(null);
+  protected readonly deleting = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -125,6 +127,24 @@ export class Profile {
       img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
+  }
+
+  protected deleteAccount() {
+    if (
+      !confirm(
+        'Delete your account? Your upcoming meetings will be cancelled (or declined, if you were invited) and everyone involved will be told. Your profile, connections and notes will be gone for good. This can\'t be undone.',
+      )
+    )
+      return;
+    this.deleting.set(true);
+    this.deleteError.set(null);
+    this.api.deleteMe().subscribe({
+      next: () => this.session.logout(),
+      error: (e) => {
+        this.deleting.set(false);
+        this.deleteError.set(e.error?.detail ?? "Couldn't delete your account.");
+      },
+    });
   }
 
   protected copyLink() {

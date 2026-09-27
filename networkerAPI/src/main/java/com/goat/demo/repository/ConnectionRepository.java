@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -25,5 +26,9 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
 			where (c.requester = :a and c.addressee = :b) or (c.requester = :b and c.addressee = :a)
 			""")
 	Optional<Connection> findBetween(@Param("a") Profile a, @Param("b") Profile b);
+
+	@Modifying
+	@Query("delete from Connection c where c.requester = :profile or c.addressee = :profile")
+	int deleteInvolving(@Param("profile") Profile profile);
 
 }

@@ -75,7 +75,8 @@ export type NotificationType = 'INVITED' | 'UPDATED' | 'CANCELLED' | 'ACCEPTED' 
 export interface AppNotification {
   id: number;
   type: NotificationType;
-  actor: PersonSummary;
+  /** id is null once the sender has deleted their account; name is what they were called then. */
+  actor: Omit<PersonSummary, 'id'> & { id: string | null };
   meetingId: number | null;
   title: string;
   previousTitle: string | null;

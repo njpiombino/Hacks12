@@ -1,7 +1,9 @@
 package com.goat.demo;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -268,6 +270,49 @@ class ApiFlowTests {
 		mvc.perform(as("auth0|erin", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("DECLINED"));
 		mvc.perform(as("auth0|erin", get("/api/meetings").param("from", "2030-03-01T00:00:00Z")
 			.param("to", "2030-04-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(0)));
+	}
+
+	@Test
+	void deletingAnAccountCancelsMeetingsAndRemovesEverythingElse() throws Exception {
+		UUID helen = signUp("auth0|helen", "Helen");
+		UUID ivan = signUp("auth0|ivan", "Ivan");
+		connect("auth0|helen", "Ivan", ivan);
+		mvc.perform(as("auth0|helen", post("/api/people/" + ivan + "/notes")).content("{\"body\":\"Met at the career fair\"}"));
+		mvc.perform(as("auth0|ivan", post("/api/people/" + helen + "/notes")).content("{\"body\":\"Knows Kafka\"}"));
+		mvc.perform(as("auth0|helen", post("/api/meetings")).content("""
+				{"title":"Coffee","startsAt":"2030-05-02T15:00:00Z","endsAt":"2030-05-02T15:30:00Z","attendeeIds":["%s"]}"""
+			.formatted(ivan))).andExpect(status().isOk());
+		mvc.perform(as("auth0|helen", post("/api/meetings")).content("""
+				{"title":"Old chat","startsAt":"2020-05-02T15:00:00Z","endsAt":"2020-05-02T15:30:00Z","attendeeIds":["%s"]}"""
+			.formatted(ivan))).andExpect(status().isOk());
+		mvc.perform(as("auth0|ivan", post("/api/meetings")).content("""
+				{"title":"Lunch","startsAt":"2030-05-03T15:00:00Z","endsAt":"2030-05-03T16:00:00Z","attendeeIds":["%s"]}"""
+			.formatted(helen))).andExpect(status().isOk());
+
+		mvc.perform(as("auth0|helen", delete("/api/me"))).andExpect(status().isNoContent());
+		assertTrue(profiles.findById(helen).isEmpty());
+
+		// Ivan hears that her meeting is cancelled and that she declined his, which cancels it (she was the only
+		// one invited). The past meeting goes quietly. The notifications still say it was Helen.
+		mvc.perform(as("auth0|ivan", get("/api/notifications")))
+			.andExpect(jsonPath("$[?(@.type == 'CANCELLED' && @.title == 'Coffee')]", hasSize(1)))
+			.andExpect(jsonPath("$[?(@.type == 'DECLINED' && @.title == 'Lunch')]", hasSize(1)))
+			.andExpect(jsonPath("$[?(@.type == 'CANCELLED' && @.title == 'Old chat')]", hasSize(0)))
+			.andExpect(jsonPath("$[0].actor.name").value("Helen"))
+			.andExpect(jsonPath("$[0].actor.id").value(nullValue()));
+		mvc.perform(as("auth0|ivan", get("/api/meetings").param("from", "2020-01-01T00:00:00Z")
+			.param("to", "2031-01-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(0)));
+
+		// Her connection and the notes about her are gone too.
+		mvc.perform(as("auth0|ivan", get("/api/connections")))
+			.andExpect(jsonPath("$.connected[?(@.person.name == 'Helen')]", hasSize(0)));
+		mvc.perform(as("auth0|ivan", get("/api/notes/recent"))).andExpect(jsonPath("$", hasSize(0)));
+
+		// Signing in again starts over with an empty profile.
+		mvc.perform(as("auth0|helen", post("/api/me/sync")).content("{\"name\":\"Helen\"}"))
+			.andExpect(jsonPath("$.id").value(not(helen.toString())));
+		mvc.perform(as("auth0|helen", get("/api/notes/recent"))).andExpect(jsonPath("$", hasSize(0)));
+		mvc.perform(as("auth0|helen", get("/api/notifications"))).andExpect(jsonPath("$", hasSize(0)));
 	}
 
 	private UUID signUp(String sub, String name) throws Exception {

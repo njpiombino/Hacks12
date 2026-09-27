@@ -44,9 +44,12 @@ public class Notification {
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	private Profile recipient;
 
-	/** Who made the change. */
-	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	/** Who made the change. Null once they've deleted their account. */
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Profile actor;
+
+	/** The actor's name when this was sent, shown after they've deleted their account. */
+	private String actorName;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
@@ -80,6 +83,7 @@ public class Notification {
 	public Notification(Profile recipient, Profile actor, Type type, Meeting meeting) {
 		this.recipient = recipient;
 		this.actor = actor;
+		this.actorName = actor.getName();
 		this.type = type;
 		this.meetingId = meeting.getId();
 		this.title = meeting.getTitle();
@@ -97,6 +101,10 @@ public class Notification {
 
 	public Profile getActor() {
 		return actor;
+	}
+
+	public String getActorName() {
+		return actorName;
 	}
 
 	public Type getType() {

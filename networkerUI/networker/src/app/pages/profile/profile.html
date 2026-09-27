@@ -146,4 +146,20 @@
       }
     </aside>
   </div>
+
+  <section class="card mt-10 flex flex-wrap items-center justify-between gap-4 border-clay/40 p-6">
+    <div class="max-w-xl">
+      <h2 class="text-xl font-semibold">Delete your account</h2>
+      <p class="mt-1 text-sm text-ink-2">
+        Cancels or declines your upcoming meetings and lets everyone involved know, then removes your profile,
+        connections and notes. This can't be undone.
+      </p>
+      @if (deleteError(); as derr) {
+        <p class="mt-2 text-sm text-clay">{{ derr }}</p>
+      }
+    </div>
+    <button type="button" class="btn btn-outline btn-danger" [disabled]="deleting()" (click)="deleteAccount()">
+      {{ deleting() ? 'Deleting…' : 'Delete account' }}
+    </button>
+  </section>
 }

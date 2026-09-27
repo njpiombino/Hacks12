@@ -21,6 +21,10 @@ export class Api {
     return this.http.put<Person>(`${this.base}/me`, update);
   }
 
+  deleteMe() {
+    return this.http.delete<void>(`${this.base}/me`);
+  }
+
   searchPeople(q: string) {
     return this.http.get<Person[]>(`${this.base}/people`, { params: { q } });
   }

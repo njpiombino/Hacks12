@@ -50,7 +50,10 @@ public final class Views {
 	}
 
 	public static Dto.NotificationView notification(Notification n) {
-		return new Dto.NotificationView(n.getId(), n.getType().name(), summary(n.getActor()), n.getMeetingId(),
+		// Once the actor has deleted their account, all that's left of them is the name they had.
+		Dto.PersonSummary actor = n.getActor() != null ? summary(n.getActor())
+				: new Dto.PersonSummary(null, n.getActorName(), null);
+		return new Dto.NotificationView(n.getId(), n.getType().name(), actor, n.getMeetingId(),
 				n.getTitle(), n.getPreviousTitle(), n.getStartsAt(), n.getLocation(),
 				n.getChanges().stream().map(Enum::name).toList(), n.getCreatedAt(), n.getReadAt() != null);
 	}
