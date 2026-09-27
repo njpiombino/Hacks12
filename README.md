@@ -77,6 +77,7 @@ All endpoints need an Auth0 access token for the API audience.
 | | |
 | --- | --- |
 | `GET /api/me`, `PUT /api/me`, `POST /api/me/sync` | Your profile (created on first visit) |
+| `PUT /api/me/resume` (multipart `file`), `DELETE /api/me/resume`, `GET /api/people/{id}/resume` | Your resume: one PDF up to 5 MB, visible only to you and your connections |
 | `GET /api/people?q=`, `GET /api/people/{id}` | Search and view people |
 | `GET/POST /api/connections`, `POST /api/connections/{id}/accept`, `DELETE /api/connections/{id}` | Connection requests |
 | `GET/POST /api/people/{id}/notes`, `PUT/DELETE /api/notes/{id}`, `GET /api/notes/recent` | Private notes |

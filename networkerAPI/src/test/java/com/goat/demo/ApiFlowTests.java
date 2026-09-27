@@ -5,11 +5,14 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,8 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.goat.demo.repository.ProfileRepository;
@@ -268,6 +274,46 @@ class ApiFlowTests {
 		mvc.perform(as("auth0|erin", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("DECLINED"));
 		mvc.perform(as("auth0|erin", get("/api/meetings").param("from", "2030-03-01T00:00:00Z")
 			.param("to", "2030-04-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(0)));
+	}
+
+	@Test
+	void resumes() throws Exception {
+		UUID ivy = signUp("auth0|ivy", "Ivy");
+		UUID jack = signUp("auth0|jack", "Jack");
+		byte[] pdf = "%PDF-1.7\nfake resume\n%%EOF".getBytes(StandardCharsets.US_ASCII);
+
+		// Only real PDFs, whatever the name says.
+		mvc.perform(upload("auth0|ivy", "cv.pdf", "not a pdf".getBytes(StandardCharsets.US_ASCII)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.detail").value("Resumes need to be PDFs"));
+
+		mvc.perform(upload("auth0|ivy", "C:\\Users\\ivy\\Ivy CV.pdf", pdf))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.resume.fileName").value("Ivy CV.pdf"))
+			.andExpect(jsonPath("$.resume.sizeBytes").value(pdf.length));
+		mvc.perform(as("auth0|ivy", get("/api/people/" + ivy + "/resume")))
+			.andExpect(status().isOk())
+			.andExpect(content().contentType(MediaType.APPLICATION_PDF))
+			.andExpect(content().bytes(pdf));
+
+		// Strangers can't see it or fetch it.
+		mvc.perform(as("auth0|jack", get("/api/people/" + ivy))).andExpect(jsonPath("$.resume").value(nullValue()));
+		mvc.perform(as("auth0|jack", get("/api/people/" + ivy + "/resume"))).andExpect(status().isNotFound());
+
+		// Connections can.
+		connect("auth0|ivy", "Jack", jack);
+		mvc.perform(as("auth0|jack", get("/api/people/" + ivy))).andExpect(jsonPath("$.resume.fileName").value("Ivy CV.pdf"));
+		mvc.perform(as("auth0|jack", get("/api/people/" + ivy + "/resume"))).andExpect(content().bytes(pdf));
+
+		// Removing it takes it away for everyone.
+		mvc.perform(as("auth0|ivy", delete("/api/me/resume"))).andExpect(jsonPath("$.resume").value(nullValue()));
+		mvc.perform(as("auth0|jack", get("/api/people/" + ivy + "/resume"))).andExpect(status().isNotFound());
+	}
+
+	private RequestBuilder upload(String sub, String fileName, byte[] data) {
+		return multipart(HttpMethod.PUT, "/api/me/resume")
+			.file(new MockMultipartFile("file", fileName, "application/pdf", data))
+			.with(jwt().jwt(j -> j.subject(sub)));
 	}
 
 	private UUID signUp(String sub, String name) throws Exception {
