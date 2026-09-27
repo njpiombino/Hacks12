@@ -4,7 +4,7 @@ A personable take on professional networking. Sign in, connect with people you a
 
 - `networkerUI/networker`: Angular 21 frontend (Tailwind, Auth0 SPA SDK)
 - `networkerAPI`: Spring Boot 4 REST API (JPA, OAuth2 resource server)
-- PostgreSQL via `docker-compose.yml`
+- PostgreSQL: a managed database on DigitalOcean, with the schema created by Flyway migrations
 
 ## Auth0
 
@@ -17,19 +17,39 @@ The domain and client ID are in `networkerUI/networker/src/environments/environm
 
 To manage these settings, ask the tenant owner to add you in the [Auth0 dashboard](https://manage.auth0.com). To use your own tenant instead, create the same API and app there, then update `environment.ts` and set `AUTH0_ISSUER`.
 
+## Database
+
+Everyone shares one remote Postgres database on DigitalOcean (database `networks`, port 25060, SSL required). Before you run the API for the first time:
+
+1. **Get `secrets.yaml`.** Ask a teammate for it privately, never through the repo or a public channel. Put it at `networkerAPI/src/main/resources/secrets.yaml`. It's gitignored and looks like this:
+
+   ```yaml
+   datasource:
+       host: <database host>
+       username: <database user>
+       password: <database password>
+   ```
+
+2. **Add your IP to the trusted sources.** In DigitalOcean, go to **Databases → the cluster → Settings → Trusted sources**. Without this, the connection times out.
+
+Anything in `src/main/resources` is packaged into the built jar, so don't share or deploy a jar built with `secrets.yaml` in place.
+
+### Schema changes
+
+Flyway owns the schema. Migrations live in `networkerAPI/src/main/resources/db/migration/` and run automatically when the API starts; each one runs once per database, and Flyway records it in the `flyway_schema_history` table. Hibernate only checks that the tables match the entities (`ddl-auto: validate`), and the API won't start if they don't.
+
+When you change an entity, add a new migration named with the next version, e.g. `V2__add_meeting_notes.sql`. Never edit a migration that has already run; Flyway checksums applied migrations and refuses to start if one changes.
+
 ## Run it
 
 Run each part in its own terminal, starting from the repo root:
 
 ```bash
-# 1. Database (Postgres in Docker, on port 55432)
-docker compose up -d
-
-# 2. API on :8080
+# 1. API on :8080 (on Windows PowerShell, use .\mvnw.cmd instead of ./mvnw)
 cd networkerAPI
 ./mvnw spring-boot:run
 
-# 3. Frontend on :4200
+# 2. Frontend on :4200
 cd networkerUI/networker
 npm install
 npm start
@@ -37,19 +57,16 @@ npm start
 
 Open http://localhost:4200.
 
-The database uses port 55432 rather than 5432 so it doesn't clash with any Postgres already installed on your machine. After a reboot, run `docker compose up -d` again.
-
 On first start, the API seeds five sample people who accept connection requests right away. That gives you someone to connect with, write notes about and invite to meetings. Set `DEMO_DATA=false` to turn this off.
 
 ## Configuration
 
-API environment variables (defaults in `application.yaml`):
+Database settings come from `secrets.yaml` (see [Database](#database)). API environment variables (defaults in `application.yaml`):
 
 | Variable | Default |
 | --- | --- |
 | `AUTH0_ISSUER` | `https://dev-meac52y4dgsxm7hb.us.auth0.com/` (keep the trailing slash) |
 | `AUTH0_AUDIENCE` | `https://networker-api` |
-| `DB_URL` / `DB_USER` / `DB_PASSWORD` | `jdbc:postgresql://localhost:55432/networker` / `networker` / `networker` |
 | `CORS_ORIGINS` | `http://localhost:4200` |
 | `DEMO_DATA` | `true` |
 
