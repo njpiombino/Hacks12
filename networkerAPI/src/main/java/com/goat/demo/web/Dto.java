@@ -42,14 +42,23 @@ public final class Dto {
 		PENDING, ACCEPTED
 	}
 
-	public record MeetingView(Long id, String title, Instant startsAt, Instant endsAt, String location,
-			String description, boolean mine, PersonSummary with, InviteStatus inviteStatus) {
+	public record AttendeeView(PersonSummary person, InviteStatus status) {
 	}
 
 	/**
-	 * Something the other person did to a meeting. {@code type} is INVITED, UPDATED, CANCELLED, ACCEPTED or
-	 * DECLINED; for UPDATED, {@code changes} lists any of TIME, PLACE and TITLE. The title, time and place are as
-	 * they were right after the change.
+	 * A meeting as the signed-in user sees it. {@code myStatus} is their own answer when they're an attendee, and
+	 * null when they organized it.
+	 */
+	public record MeetingView(Long id, String title, Instant startsAt, Instant endsAt, String location,
+			String description, boolean mine, PersonSummary organizer, List<AttendeeView> attendees,
+			InviteStatus myStatus) {
+	}
+
+	/**
+	 * Something another person did to a meeting. {@code type} is INVITED, UPDATED, CANCELLED, ACCEPTED, DECLINED
+	 * (the last attendee declined, so it's cancelled) or DROPPED_OUT (one of several attendees declined); for
+	 * UPDATED, {@code changes} lists any of TIME, PLACE and TITLE. The title, time and place are as they were right
+	 * after the change.
 	 */
 	public record NotificationView(Long id, String type, PersonSummary actor, Long meetingId, String title,
 			String previousTitle, Instant startsAt, String location, List<String> changes, Instant createdAt,
@@ -74,7 +83,7 @@ public final class Dto {
 
 	public record MeetingRequest(@NotBlank @Size(max = 200) String title, @NotNull Instant startsAt,
 			@NotNull Instant endsAt, @Size(max = 200) String location, @Size(max = 2000) String description,
-			UUID attendeeId) {
+			@Size(max = 20) List<UUID> attendeeIds) {
 	}
 
 }

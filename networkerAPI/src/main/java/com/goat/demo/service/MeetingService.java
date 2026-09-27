@@ -2,7 +2,9 @@ package com.goat.demo.service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.goat.demo.domain.Meeting;
+import com.goat.demo.domain.MeetingAttendee;
 import com.goat.demo.domain.Notification;
 import com.goat.demo.domain.Profile;
 import com.goat.demo.repository.MeetingRepository;
@@ -48,56 +51,69 @@ public class MeetingService {
 	}
 
 	public Dto.MeetingView create(Profile me, Dto.MeetingRequest request) {
+		Map<UUID, Profile> invited = resolveAttendees(me, request);
 		Meeting meeting = new Meeting(me);
-		apply(me, meeting, request);
+		applyDetails(meeting, request);
+		invited.values().forEach(meeting::invite);
 		meetings.save(meeting);
-		if (meeting.getAttendee() != null) {
-			notifications.send(meeting.getAttendee(), me, Notification.Type.INVITED, meeting);
+		for (MeetingAttendee a : meeting.getAttendees()) {
+			notifications.send(a.getProfile(), me, Notification.Type.INVITED, meeting);
 		}
 		return Views.meeting(meeting, me);
 	}
 
 	public Dto.MeetingView update(Profile me, Long id, Dto.MeetingRequest request) {
 		Meeting meeting = findOwned(me, id);
-		Profile before = meeting.getAttendee();
+		Map<UUID, Profile> invited = resolveAttendees(me, request);
 		String oldTitle = meeting.getTitle();
 		Instant oldStart = meeting.getStartsAt();
 		Instant oldEnd = meeting.getEndsAt();
 		String oldLocation = meeting.getLocation();
 
-		// Someone taken off the meeting hears it was cancelled, as they last knew it.
-		if (before != null && (request.attendeeId() == null || !request.attendeeId().equals(before.getId()))) {
-			notifications.send(before, me, Notification.Type.CANCELLED, meeting);
+		// People taken off the meeting hear it was cancelled, as they last knew it.
+		for (MeetingAttendee a : List.copyOf(meeting.getAttendees())) {
+			if (!invited.containsKey(a.getProfile().getId())) {
+				notifications.send(a.getProfile(), me, Notification.Type.CANCELLED, meeting);
+				meeting.remove(a);
+			}
 		}
 
-		apply(me, meeting, request);
+		applyDetails(meeting, request);
 
-		Profile after = meeting.getAttendee();
-		if (after != null && (before == null || !before.getId().equals(after.getId()))) {
-			notifications.send(after, me, Notification.Type.INVITED, meeting);
+		List<Notification.Change> changes = new ArrayList<>();
+		if (!meeting.getStartsAt().equals(oldStart) || !meeting.getEndsAt().equals(oldEnd)) {
+			changes.add(Notification.Change.TIME);
 		}
-		else if (after != null) {
-			List<Notification.Change> changes = new ArrayList<>();
-			if (!meeting.getStartsAt().equals(oldStart) || !meeting.getEndsAt().equals(oldEnd)) {
-				changes.add(Notification.Change.TIME);
-			}
-			if (!Objects.equals(meeting.getLocation(), oldLocation)) {
-				changes.add(Notification.Change.PLACE);
-			}
-			if (!meeting.getTitle().equals(oldTitle)) {
-				changes.add(Notification.Change.TITLE);
+		if (!Objects.equals(meeting.getLocation(), oldLocation)) {
+			changes.add(Notification.Change.PLACE);
+		}
+		if (!meeting.getTitle().equals(oldTitle)) {
+			changes.add(Notification.Change.TITLE);
+		}
+
+		// Everyone still on it hears what changed; a new time needs a fresh answer from each of them.
+		for (MeetingAttendee a : meeting.getAttendees()) {
+			if (changes.contains(Notification.Change.TIME)) {
+				a.setStatus(Meeting.InviteStatus.PENDING);
 			}
 			if (!changes.isEmpty()) {
-				notifications.sendUpdate(after, me, meeting, changes, oldTitle);
+				notifications.sendUpdate(a.getProfile(), me, meeting, changes, oldTitle);
 			}
+			invited.remove(a.getProfile().getId());
+		}
+
+		// Whoever is left in the list is new to the meeting.
+		for (Profile p : invited.values()) {
+			meeting.invite(p);
+			notifications.send(p, me, Notification.Type.INVITED, meeting);
 		}
 		return Views.meeting(meeting, me);
 	}
 
 	public void delete(Profile me, Long id) {
 		Meeting meeting = findOwned(me, id);
-		if (meeting.getAttendee() != null) {
-			notifications.send(meeting.getAttendee(), me, Notification.Type.CANCELLED, meeting);
+		for (MeetingAttendee a : meeting.getAttendees()) {
+			notifications.send(a.getProfile(), me, Notification.Type.CANCELLED, meeting);
 		}
 		meetings.delete(meeting);
 	}
@@ -109,62 +125,76 @@ public class MeetingService {
 	}
 
 	public Dto.MeetingView accept(Profile me, Long id) {
-		Meeting meeting = findInvited(me, id);
-		if (meeting.getInviteStatus() != Meeting.InviteStatus.ACCEPTED) {
-			meeting.setInviteStatus(Meeting.InviteStatus.ACCEPTED);
+		MeetingAttendee mine = findInvited(me, id);
+		Meeting meeting = mine.getMeeting();
+		if (mine.getStatus() != Meeting.InviteStatus.ACCEPTED) {
+			mine.setStatus(Meeting.InviteStatus.ACCEPTED);
 			notifications.send(meeting.getOwner(), me, Notification.Type.ACCEPTED, meeting);
 		}
 		return Views.meeting(meeting, me);
 	}
 
-	/** Turning down an invitation cancels the meeting, so it comes off both calendars. */
+	/**
+	 * Takes the user off the meeting. If they were the last attendee, the meeting is cancelled and comes off the
+	 * organizer's calendar too.
+	 */
 	public void decline(Profile me, Long id) {
-		Meeting meeting = findInvited(me, id);
-		notifications.send(meeting.getOwner(), me, Notification.Type.DECLINED, meeting);
-		meetings.delete(meeting);
+		MeetingAttendee mine = findInvited(me, id);
+		Meeting meeting = mine.getMeeting();
+		meeting.remove(mine);
+		if (meeting.getAttendees().isEmpty()) {
+			notifications.send(meeting.getOwner(), me, Notification.Type.DECLINED, meeting);
+			meetings.delete(meeting);
+		}
+		else {
+			notifications.send(meeting.getOwner(), me, Notification.Type.DROPPED_OUT, meeting);
+		}
 	}
 
-	private void apply(Profile me, Meeting meeting, Dto.MeetingRequest request) {
+	private void applyDetails(Meeting meeting, Dto.MeetingRequest request) {
 		if (!request.endsAt().isAfter(request.startsAt())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A meeting has to end after it starts");
-		}
-		Profile attendee = null;
-		if (request.attendeeId() != null) {
-			attendee = profiles.get(request.attendeeId());
-			if (!connections.areConnected(me, attendee)) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can only invite your connections");
-			}
-		}
-		// A new invitee, or a new time for the current one, needs a fresh answer.
-		boolean sameAttendee = attendee != null && meeting.isAttendee(attendee);
-		boolean sameTime = request.startsAt().equals(meeting.getStartsAt()) && request.endsAt().equals(meeting.getEndsAt());
-		if (attendee == null) {
-			meeting.setInviteStatus(null);
-		}
-		else if (!sameAttendee || !sameTime) {
-			meeting.setInviteStatus(Meeting.InviteStatus.PENDING);
 		}
 		meeting.setTitle(request.title().strip());
 		meeting.setStartsAt(request.startsAt());
 		meeting.setEndsAt(request.endsAt());
 		meeting.setLocation(request.location() == null || request.location().isBlank() ? null : request.location().strip());
 		meeting.setDescription(request.description() == null || request.description().isBlank() ? null : request.description().strip());
-		meeting.setAttendee(attendee);
 	}
 
-	private Meeting findInvited(Profile me, Long id) {
+	/** The people to invite, in the order given, after checking each is one of the organizer's connections. */
+	private Map<UUID, Profile> resolveAttendees(Profile me, Dto.MeetingRequest request) {
+		Map<UUID, Profile> invited = new LinkedHashMap<>();
+		if (request.attendeeIds() == null) {
+			return invited;
+		}
+		for (UUID id : request.attendeeIds()) {
+			if (id == null || invited.containsKey(id)) {
+				continue;
+			}
+			if (id.equals(me.getId())) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You're the organizer, so you're already coming");
+			}
+			Profile attendee = profiles.get(id);
+			if (!connections.areConnected(me, attendee)) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can only invite your connections");
+			}
+			invited.put(id, attendee);
+		}
+		return invited;
+	}
+
+	private MeetingAttendee findInvited(Profile me, Long id) {
 		Meeting meeting = meetings.findById(id)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No such meeting"));
-		if (!meeting.isAttendee(me)) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the person invited can answer this");
-		}
-		return meeting;
+		return meeting.attendee(me)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the people invited can answer this"));
 	}
 
 	private Meeting findOwned(Profile me, Long id) {
 		Meeting meeting = meetings.findById(id)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No such meeting"));
-		if (!meeting.getOwner().getId().equals(me.getId())) {
+		if (!meeting.isOwner(me)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the organizer can change this meeting");
 		}
 		return meeting;

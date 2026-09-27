@@ -1,5 +1,7 @@
 package com.goat.demo.service;
 
+import java.util.List;
+
 import com.goat.demo.domain.Meeting;
 import com.goat.demo.domain.Note;
 import com.goat.demo.domain.Notification;
@@ -33,11 +35,18 @@ public final class Views {
 	}
 
 	public static Dto.MeetingView meeting(Meeting m, Profile me) {
-		boolean mine = m.getOwner().getId().equals(me.getId());
-		Profile with = mine ? m.getAttendee() : m.getOwner();
-		Dto.InviteStatus status = m.getInviteStatus() == null ? null : Dto.InviteStatus.valueOf(m.getInviteStatus().name());
+		boolean mine = m.isOwner(me);
+		List<Dto.AttendeeView> attendees = m.getAttendees()
+			.stream()
+			.map(a -> new Dto.AttendeeView(summary(a.getProfile()), status(a.getStatus())))
+			.toList();
+		Dto.InviteStatus myStatus = m.attendee(me).map(a -> status(a.getStatus())).orElse(null);
 		return new Dto.MeetingView(m.getId(), m.getTitle(), m.getStartsAt(), m.getEndsAt(), m.getLocation(),
-				m.getDescription(), mine, summary(with), status);
+				m.getDescription(), mine, summary(m.getOwner()), attendees, myStatus);
+	}
+
+	private static Dto.InviteStatus status(Meeting.InviteStatus status) {
+		return Dto.InviteStatus.valueOf(status.name());
 	}
 
 	public static Dto.NotificationView notification(Notification n) {

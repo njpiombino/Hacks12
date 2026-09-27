@@ -4,17 +4,23 @@ import { RouterLink } from '@angular/router';
 
 import { Api } from '../../core/api';
 import { addDays, monthGrid, sameDay, startOfDay } from '../../core/dates';
+import { awaitingReplies, namesOf, needsMyAnswer, otherPeople } from '../../core/meetings';
 import { Meeting } from '../../core/models';
-import { Avatar } from '../../shared/avatar';
+import { Session } from '../../core/session';
 import { MeetingDialog } from '../../shared/meeting-dialog';
+import { MeetingStatus } from '../../shared/meeting-status';
+import { PeopleStack } from '../../shared/people-stack';
 
 @Component({
   selector: 'app-calendar',
-  imports: [DatePipe, RouterLink, Avatar, MeetingDialog],
+  imports: [DatePipe, MeetingDialog, MeetingStatus, PeopleStack],
   templateUrl: './calendar.html',
 })
 export class Calendar {
   private readonly api = inject(Api);
+  private readonly session = inject(Session);
+
+  protected readonly namesOf = namesOf;
 
   protected readonly weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   protected readonly today = startOfDay(new Date());
@@ -79,9 +85,13 @@ export class Calendar {
     return day.getMonth() === this.month().getMonth();
   }
 
-  /** Solid for confirmed meetings, dashed outline while the invitee hasn't answered. */
+  protected others(m: Meeting) {
+    return otherPeople(m, this.session.me()?.id);
+  }
+
+  /** Solid for confirmed meetings, dashed outline while an answer is outstanding. */
   protected chipClass(m: Meeting) {
-    if (m.inviteStatus === 'PENDING') {
+    if (awaitingReplies(m) || needsMyAnswer(m)) {
       return m.mine ? 'border border-dashed border-forest text-forest' : 'border border-dashed border-clay text-[#8a3f22]';
     }
     return m.mine ? 'bg-forest text-[#fdfbf5]' : 'bg-clay-soft text-[#8a3f22]';

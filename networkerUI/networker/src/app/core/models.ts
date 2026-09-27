@@ -49,13 +49,27 @@ export interface Meeting {
   endsAt: string;
   location: string | null;
   description: string | null;
+  /** True when you organized it. */
   mine: boolean;
-  with: PersonSummary | null;
-  /** The invitee's answer; null for meetings with no one else. */
-  inviteStatus: 'PENDING' | 'ACCEPTED' | null;
+  organizer: PersonSummary;
+  /** Everyone invited (possibly including you), with their answers. */
+  attendees: Attendee[];
+  /** Your own answer when you're invited; null when you organized it. */
+  myStatus: InviteStatus | null;
 }
 
-export type NotificationType = 'INVITED' | 'UPDATED' | 'CANCELLED' | 'ACCEPTED' | 'DECLINED';
+export type InviteStatus = 'PENDING' | 'ACCEPTED';
+
+export interface Attendee {
+  person: PersonSummary;
+  status: InviteStatus;
+}
+
+/**
+ * DECLINED: the last attendee declined, so the meeting was cancelled.
+ * DROPPED_OUT: one of several attendees declined; the meeting goes on without them.
+ */
+export type NotificationType = 'INVITED' | 'UPDATED' | 'CANCELLED' | 'ACCEPTED' | 'DECLINED' | 'DROPPED_OUT';
 
 /** Something the other person did to a meeting. Title, time and place are as they were right after the change. */
 export interface AppNotification {
@@ -79,7 +93,7 @@ export interface MeetingRequest {
   endsAt: string;
   location: string | null;
   description: string | null;
-  attendeeId: string | null;
+  attendeeIds: string[];
 }
 
 export interface ProfileUpdate {

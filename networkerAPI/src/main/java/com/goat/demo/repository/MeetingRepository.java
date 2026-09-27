@@ -10,31 +10,32 @@ import org.springframework.data.repository.query.Param;
 import com.goat.demo.domain.Meeting;
 import com.goat.demo.domain.Profile;
 
+/** "Involved" means organizing the meeting or being invited to it. */
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
 	@Query("""
-			select m from Meeting m
-			join fetch m.owner left join fetch m.attendee
-			where (m.owner = :me or m.attendee = :me)
+			select distinct m from Meeting m
+			join fetch m.owner left join fetch m.attendees at left join fetch at.profile
+			where (m.owner = :me or exists (select 1 from MeetingAttendee a where a.meeting = m and a.profile = :me))
 			  and m.startsAt < :to and m.endsAt > :from
 			order by m.startsAt
 			""")
 	List<Meeting> findOverlapping(@Param("me") Profile me, @Param("from") Instant from, @Param("to") Instant to);
 
 	@Query("""
-			select m from Meeting m
-			join fetch m.owner left join fetch m.attendee
-			where (m.owner = :me or m.attendee = :me)
-			  and (m.owner = :other or m.attendee = :other)
+			select distinct m from Meeting m
+			join fetch m.owner left join fetch m.attendees at left join fetch at.profile
+			where (m.owner = :me or exists (select 1 from MeetingAttendee a where a.meeting = m and a.profile = :me))
+			  and (m.owner = :other or exists (select 1 from MeetingAttendee a where a.meeting = m and a.profile = :other))
 			order by m.startsAt desc
 			""")
 	List<Meeting> findWith(@Param("me") Profile me, @Param("other") Profile other);
 
 	@Query("""
-			select m from Meeting m
-			join fetch m.owner
-			where m.attendee = :me
-			  and m.inviteStatus = com.goat.demo.domain.Meeting.InviteStatus.PENDING
+			select distinct m from Meeting m
+			join fetch m.owner left join fetch m.attendees at left join fetch at.profile
+			where exists (select 1 from MeetingAttendee a where a.meeting = m and a.profile = :me
+			                and a.status = com.goat.demo.domain.Meeting.InviteStatus.PENDING)
 			  and m.endsAt > :now
 			order by m.startsAt
 			""")

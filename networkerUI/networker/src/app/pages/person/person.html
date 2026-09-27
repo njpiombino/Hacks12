@@ -139,9 +139,7 @@
                   <button class="w-full px-4 py-3 text-left hover:bg-sunken/50" (click)="editingMeeting.set(m)">
                     <p class="font-medium">
                       {{ m.title }}
-                      @if (m.inviteStatus === 'PENDING') {
-                        <span class="chip ml-1 align-middle" [class.chip-clay]="!m.mine">{{ m.mine ? 'Awaiting reply' : 'Needs your answer' }}</span>
-                      }
+                      <app-meeting-status class="ml-1 align-middle" [meeting]="m" />
                     </p>
                     <p class="text-sm text-ink-2">{{ m.startsAt | date: 'EEE, MMM d · h:mm a' }}</p>
                   </button>

@@ -67,6 +67,8 @@ export class NotificationBell {
         return `${who} accepted ${n.title}`;
       case 'DECLINED':
         return `${who} declined ${n.title}, so it's been cancelled`;
+      case 'DROPPED_OUT':
+        return `${who} can't make it to ${n.title}`;
       case 'CANCELLED':
         return `${who} cancelled ${n.title}`;
       case 'UPDATED': {

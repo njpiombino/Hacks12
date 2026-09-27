@@ -24,8 +24,12 @@ import jakarta.persistence.Table;
 @Table(name = "notifications")
 public class Notification {
 
+	/**
+	 * DECLINED means the last attendee declined, so the meeting was cancelled; DROPPED_OUT means one attendee of
+	 * several declined and the meeting goes on without them.
+	 */
 	public enum Type {
-		INVITED, UPDATED, CANCELLED, ACCEPTED, DECLINED
+		INVITED, UPDATED, CANCELLED, ACCEPTED, DECLINED, DROPPED_OUT
 	}
 
 	/** What an UPDATED notification is about. */
