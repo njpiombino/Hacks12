@@ -21,7 +21,11 @@ public final class Dto {
 
 	public record Person(UUID id, String name, String headline, String location, String bio, String email,
 			String pictureUrl, String portfolioUrl, List<String> interests, boolean hideLocation, boolean hideEmail,
-			Relation relation, Long connectionId) {
+			Relation relation, Long connectionId, ResumeInfo resume) {
+	}
+
+	/** About an uploaded resume; the file comes from GET /api/people/{id}/resume. */
+	public record ResumeInfo(String fileName, int sizeBytes, Instant uploadedAt) {
 	}
 
 	public record PersonSummary(UUID id, String name, String pictureUrl) {
