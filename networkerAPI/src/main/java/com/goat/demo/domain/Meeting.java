@@ -1,21 +1,25 @@
 package com.goat.demo.domain;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 /**
- * A meeting on the owner's calendar, optionally with one of their connections. The attendee has to accept the
- * invitation; declining it deletes the meeting for both of them.
+ * A meeting on the owner's calendar, optionally with some of their connections. Each attendee accepts or declines
+ * on their own; declining takes them off the meeting, and once the last attendee declines it's cancelled.
  */
 @Entity
 @Table(name = "meetings")
@@ -32,12 +36,9 @@ public class Meeting {
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	private Profile owner;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	private Profile attendee;
-
-	/** The attendee's answer to the invitation; null when there's no attendee. */
-	@Enumerated(EnumType.STRING)
-	private InviteStatus inviteStatus;
+	@OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy("id")
+	private List<MeetingAttendee> attendees = new ArrayList<>();
 
 	@Column(nullable = false)
 	private String title;
@@ -68,24 +69,26 @@ public class Meeting {
 		return owner;
 	}
 
-	public Profile getAttendee() {
+	public boolean isOwner(Profile profile) {
+		return owner.getId().equals(profile.getId());
+	}
+
+	public List<MeetingAttendee> getAttendees() {
+		return attendees;
+	}
+
+	public Optional<MeetingAttendee> attendee(Profile profile) {
+		return attendees.stream().filter(a -> a.getProfile().getId().equals(profile.getId())).findFirst();
+	}
+
+	public MeetingAttendee invite(Profile profile) {
+		MeetingAttendee attendee = new MeetingAttendee(this, profile);
+		attendees.add(attendee);
 		return attendee;
 	}
 
-	public void setAttendee(Profile attendee) {
-		this.attendee = attendee;
-	}
-
-	public InviteStatus getInviteStatus() {
-		return inviteStatus;
-	}
-
-	public void setInviteStatus(InviteStatus inviteStatus) {
-		this.inviteStatus = inviteStatus;
-	}
-
-	public boolean isAttendee(Profile profile) {
-		return attendee != null && attendee.getId().equals(profile.getId());
+	public void remove(MeetingAttendee attendee) {
+		attendees.remove(attendee);
 	}
 
 	public String getTitle() {

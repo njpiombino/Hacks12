@@ -1,14 +1,16 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { Api } from '../core/api';
 import { fromInputs, toDateInput, toTimeInput } from '../core/dates';
-import { Meeting, PersonSummary } from '../core/models';
+import { awaitingReplies, declineCancels, needsMyAnswer } from '../core/meetings';
+import { InviteStatus, Meeting, PersonSummary } from '../core/models';
+import { Avatar } from './avatar';
 
-/** Create or edit a meeting. Rendered as a modal sheet over the page. */
+/** Create or edit a meeting, or answer an invitation. Rendered as a modal sheet over the page. */
 @Component({
   selector: 'app-meeting-dialog',
-  imports: [FormsModule],
+  imports: [FormsModule, Avatar],
   templateUrl: './meeting-dialog.html',
 })
 export class MeetingDialog implements OnInit {
@@ -17,22 +19,34 @@ export class MeetingDialog implements OnInit {
   /** Existing meeting to edit; omit to create a new one. */
   readonly meeting = input<Meeting | null>(null);
   readonly day = input<Date | null>(null);
-  /** Pre-selects who the meeting is with (e.g. from a person's page). */
+  /** Pre-selects someone to invite (e.g. from a person's page). */
   readonly withPerson = input<PersonSummary | null>(null);
 
   readonly saved = output<void>();
   readonly closed = output<void>();
 
-  protected readonly people = signal<PersonSummary[]>([]);
+  private readonly connections = signal<PersonSummary[]>([]);
+  protected readonly invited = signal<string[]>([]);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  protected readonly needsMyAnswer = needsMyAnswer;
+  protected readonly awaitingReplies = awaitingReplies;
+
+  /** Who can be invited: your connections, plus anyone already on the meeting. */
+  protected readonly people = computed(() => {
+    const list = [...this.connections()];
+    for (const a of this.meeting()?.attendees ?? []) {
+      if (!list.some((p) => p.id === a.person.id)) list.push(a.person);
+    }
+    return list;
+  });
 
   protected form = {
     title: '',
     date: '',
     start: '10:00',
     end: '10:30',
-    attendeeId: null as string | null,
     location: '',
     description: '',
   };
@@ -47,20 +61,35 @@ export class MeetingDialog implements OnInit {
         date: toDateInput(start),
         start: toTimeInput(start),
         end: toTimeInput(end),
-        attendeeId: m.with?.id ?? null,
         location: m.location ?? '',
         description: m.description ?? '',
       };
+      this.invited.set(m.attendees.map((a) => a.person.id));
     } else {
       this.form.date = toDateInput(this.day() ?? new Date());
-      this.form.attendeeId = this.withPerson()?.id ?? null;
-      const who = this.withPerson()?.name;
-      if (who) this.form.title = `Coffee with ${who.split(' ')[0]}`;
+      const who = this.withPerson();
+      if (who) {
+        this.invited.set([who.id]);
+        if (who.name) this.form.title = `Coffee with ${who.name.split(' ')[0]}`;
+      }
     }
 
     this.api.connections().subscribe((c) =>
-      this.people.set(c.connected.map((i) => ({ id: i.person.id, name: i.person.name, pictureUrl: i.person.pictureUrl }))),
+      this.connections.set(c.connected.map((i) => ({ id: i.person.id, name: i.person.name, pictureUrl: i.person.pictureUrl }))),
     );
+  }
+
+  protected isInvited(id: string) {
+    return this.invited().includes(id);
+  }
+
+  protected toggle(id: string) {
+    this.invited.update((ids) => (ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]));
+  }
+
+  /** Current answer from someone already on the meeting, if they are. */
+  protected statusOf(id: string): InviteStatus | null {
+    return this.meeting()?.attendees.find((a) => a.person.id === id)?.status ?? null;
   }
 
   protected save() {
@@ -74,7 +103,7 @@ export class MeetingDialog implements OnInit {
       title: this.form.title.trim(),
       startsAt: startsAt.toISOString(),
       endsAt: endsAt.toISOString(),
-      attendeeId: this.form.attendeeId,
+      attendeeIds: this.invited(),
       location: this.form.location.trim() || null,
       description: this.form.description.trim() || null,
     };
@@ -92,7 +121,9 @@ export class MeetingDialog implements OnInit {
 
   protected remove() {
     const m = this.meeting();
-    if (!m || !confirm(`Delete "${m.title}"?`)) return;
+    if (!m) return;
+    const warning = m.attendees.length ? ' Everyone invited will be told it was cancelled.' : '';
+    if (!confirm(`Delete "${m.title}"?${warning}`)) return;
     this.api.deleteMeeting(m.id).subscribe(() => this.saved.emit());
   }
 
@@ -111,8 +142,12 @@ export class MeetingDialog implements OnInit {
 
   protected decline() {
     const m = this.meeting();
-    const organizer = m?.with?.name ?? 'the organizer';
-    if (!m || !confirm(`Decline "${m.title}"? It will be cancelled for you and ${organizer}.`)) return;
+    if (!m) return;
+    const organizer = m.organizer.name ?? 'the organizer';
+    const outcome = declineCancels(m)
+      ? `It will be cancelled for you and ${organizer}.`
+      : `You'll be taken off it, and ${organizer} will be told.`;
+    if (!confirm(`Decline "${m.title}"? ${outcome}`)) return;
     this.saving.set(true);
     this.api.declineMeeting(m.id).subscribe({
       next: () => this.saved.emit(),

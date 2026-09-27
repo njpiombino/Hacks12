@@ -13,14 +13,14 @@
         <h2 id="meeting-dialog-title" class="text-2xl font-semibold">{{ m ? (m.mine ? 'Edit meeting' : m.title) : 'Schedule a meeting' }}</h2>
         @if (m && !m.mine) {
           <p class="mt-1 text-sm text-ink-2">
-            @if (m.inviteStatus === 'PENDING') {
-              {{ m.with?.name }} invited you. Accept to confirm, or decline to cancel it.
+            @if (needsMyAnswer(m)) {
+              {{ m.organizer.name }} invited you. Accept to confirm, or decline if you can't make it.
             } @else {
-              {{ m.with?.name }} invited you. Only they can change it.
+              {{ m.organizer.name }} invited you. Only they can change it.
             }
           </p>
-        } @else if (m?.inviteStatus === 'PENDING') {
-          <p class="mt-1"><span class="chip">Waiting for {{ m?.with?.name }} to accept</span></p>
+        } @else if (m && awaitingReplies(m)) {
+          <p class="mt-1"><span class="chip">Waiting on replies</span></p>
         }
       </div>
       <button type="button" class="btn btn-ghost btn-sm -mr-2" (click)="closed.emit()" aria-label="Close">✕</button>
@@ -47,15 +47,56 @@
         </div>
       </div>
 
-      <div>
-        <label class="label" for="mt-with">With</label>
-        <select id="mt-with" name="attendeeId" class="input" [(ngModel)]="form.attendeeId">
-          <option [ngValue]="null">Just me</option>
-          @for (p of people(); track p.id) {
-            <option [ngValue]="p.id">{{ p.name }}</option>
+      @if (!m || m.mine) {
+        <div role="group" aria-labelledby="mt-with">
+          <p class="label" id="mt-with">
+            With <span class="font-normal text-ink-3">· {{ invited().length ? invited().length + ' invited' : 'just you so far' }}</span>
+          </p>
+          @if (people().length) {
+            <div class="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
+              @for (p of people(); track p.id) {
+                @let on = isInvited(p.id);
+                @let status = statusOf(p.id);
+                <button
+                  type="button"
+                  class="flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-sm transition-colors"
+                  [class]="on ? 'border-forest bg-forest-soft text-forest-dark' : 'border-line bg-card text-ink-2 hover:border-ink-3'"
+                  [attr.aria-pressed]="on"
+                  (click)="toggle(p.id)"
+                >
+                  <app-avatar [name]="p.name" [src]="p.pictureUrl" size="sm" />
+                  {{ p.name }}
+                  @if (on && status === 'ACCEPTED') {
+                    <span aria-label="accepted">✓</span>
+                  } @else if (on && status === 'PENDING') {
+                    <span class="hand text-sm" aria-label="hasn't answered">?</span>
+                  }
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="text-sm text-ink-2">Connect with people to invite them to meetings.</p>
           }
-        </select>
-      </div>
+        </div>
+      } @else {
+        <div>
+          <p class="label">Who's coming</p>
+          <ul class="space-y-2">
+            <li class="flex items-center gap-2 text-sm">
+              <app-avatar [name]="m.organizer.name" [src]="m.organizer.pictureUrl" size="sm" />
+              <span class="flex-1">{{ m.organizer.name }}</span>
+              <span class="hand text-base text-ink-3">organizer</span>
+            </li>
+            @for (a of m.attendees; track a.person.id) {
+              <li class="flex items-center gap-2 text-sm">
+                <app-avatar [name]="a.person.name" [src]="a.person.pictureUrl" size="sm" />
+                <span class="flex-1">{{ a.person.name }}</span>
+                <span class="chip" [class.chip-forest]="a.status === 'ACCEPTED'">{{ a.status === 'ACCEPTED' ? 'Going' : 'Not answered' }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
 
       <div>
         <label class="label" for="mt-where">Where</label>
@@ -86,14 +127,14 @@
       }
       @if (m && !m.mine) {
         <button type="button" class="btn btn-danger" [disabled]="saving()" (click)="decline()">
-          {{ m.inviteStatus === 'PENDING' ? 'Decline' : "Can't make it" }}
+          {{ needsMyAnswer(m) ? 'Decline' : "Can't make it" }}
         </button>
       }
       <span class="flex-1"></span>
       <button type="button" class="btn btn-ghost" (click)="closed.emit()">{{ m && !m.mine ? 'Close' : 'Cancel' }}</button>
       @if (!m || m.mine) {
         <button type="submit" class="btn btn-primary" [disabled]="f.invalid || saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
-      } @else if (m.inviteStatus === 'PENDING') {
+      } @else if (needsMyAnswer(m)) {
         <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="accept()">Accept</button>
       }
     </div>
