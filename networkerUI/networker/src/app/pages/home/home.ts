@@ -4,14 +4,17 @@ import { RouterLink } from '@angular/router';
 
 import { Api } from '../../core/api';
 import { addDays, startOfDay } from '../../core/dates';
+import { declineCancels, otherPeople } from '../../core/meetings';
 import { Connections, Meeting, Note } from '../../core/models';
 import { Session } from '../../core/session';
 import { Avatar } from '../../shared/avatar';
 import { MeetingDialog } from '../../shared/meeting-dialog';
+import { MeetingStatus } from '../../shared/meeting-status';
+import { PeopleStack } from '../../shared/people-stack';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, DatePipe, Avatar, MeetingDialog],
+  imports: [RouterLink, DatePipe, Avatar, MeetingDialog, MeetingStatus, PeopleStack],
   templateUrl: './home.html',
 })
 export class Home {
@@ -68,8 +71,16 @@ export class Home {
   }
 
   protected declineMeeting(m: Meeting) {
-    if (!confirm(`Decline "${m.title}"? It will be cancelled for you and ${m.with?.name ?? 'the organizer'}.`)) return;
+    const organizer = m.organizer.name ?? 'the organizer';
+    const outcome = declineCancels(m)
+      ? `It will be cancelled for you and ${organizer}.`
+      : `You'll be taken off it, and ${organizer} will be told.`;
+    if (!confirm(`Decline "${m.title}"? ${outcome}`)) return;
     this.api.declineMeeting(m.id).subscribe(() => this.refresh());
+  }
+
+  protected others(m: Meeting) {
+    return otherPeople(m, this.session.me()?.id);
   }
 
   protected onSaved() {

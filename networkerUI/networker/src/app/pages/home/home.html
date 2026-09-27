@@ -43,9 +43,7 @@
                   <div class="min-w-0 flex-1">
                     <p class="truncate font-medium">
                       {{ m.title }}
-                      @if (m.inviteStatus === 'PENDING') {
-                        <span class="chip ml-1 align-middle" [class.chip-clay]="!m.mine">{{ m.mine ? 'Awaiting reply' : 'Needs your answer' }}</span>
-                      }
+                      <app-meeting-status class="ml-1 align-middle" [meeting]="m" />
                     </p>
                     <p class="truncate text-sm text-ink-2">
                       {{ m.startsAt | date: 'h:mm a' }} – {{ m.endsAt | date: 'h:mm a' }}
@@ -54,9 +52,7 @@
                       }
                     </p>
                   </div>
-                  @if (m.with; as w) {
-                    <app-avatar [name]="w.name" [src]="w.pictureUrl" size="sm" />
-                  }
+                  <app-people-stack [people]="others(m)" />
                 </button>
               </li>
             }
@@ -96,10 +92,16 @@
             @for (m of invitations(); track m.id) {
               <li class="card flex items-center gap-3 p-4">
                 <button class="flex min-w-0 flex-1 items-center gap-3 text-left" (click)="editing.set(m)">
-                  <app-avatar [name]="m.with?.name ?? null" [src]="m.with?.pictureUrl ?? null" />
+                  <app-avatar [name]="m.organizer.name" [src]="m.organizer.pictureUrl" />
                   <span class="min-w-0">
                     <span class="block truncate font-medium hover:underline">{{ m.title }}</span>
-                    <span class="block truncate text-xs text-ink-2">{{ m.with?.name }} · {{ m.startsAt | date: 'EEE, MMM d · h:mm a' }}</span>
+                    <span class="block truncate text-xs text-ink-2">
+                      {{ m.organizer.name }}
+                      @if (m.attendees.length > 1) {
+                        + {{ m.attendees.length - 1 }} more
+                      }
+                      · {{ m.startsAt | date: 'EEE, MMM d · h:mm a' }}
+                    </span>
                   </span>
                 </button>
                 <button class="btn btn-primary btn-sm" (click)="acceptMeeting(m)">Accept</button>
