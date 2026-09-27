@@ -60,21 +60,16 @@
           <div class="min-w-0 flex-1">
             <p class="font-medium">{{ m.title }}</p>
             <p class="text-sm text-ink-2">{{ m.startsAt | date: 'h:mm a' }} – {{ m.endsAt | date: 'h:mm a' }}</p>
-            @if (m.inviteStatus === 'PENDING') {
-              <span class="chip mt-1.5" [class.chip-clay]="!m.mine">{{ m.mine ? 'Awaiting reply' : 'Needs your answer' }}</span>
-            }
+            <app-meeting-status class="mt-1.5 block empty:hidden" [meeting]="m" />
             @if (m.location) {
               <p class="mt-1 truncate text-sm text-ink-2">{{ m.location }}</p>
             }
-            @if (m.with; as w) {
-              <a
-                [routerLink]="['/people', w.id]"
-                (click)="$event.stopPropagation()"
-                class="mt-2 inline-flex items-center gap-2 text-sm text-ink-2 hover:text-ink"
-              >
-                <app-avatar [name]="w.name" [src]="w.pictureUrl" size="sm" />
-                {{ m.mine ? 'with' : 'from' }} {{ w.name }}
-              </a>
+            @let people = others(m);
+            @if (people.length) {
+              <p class="mt-2 flex items-center gap-2 text-sm text-ink-2">
+                <app-people-stack [people]="people" />
+                <span class="min-w-0 truncate">with {{ namesOf(people) }}</span>
+              </p>
             }
           </div>
         </div>
