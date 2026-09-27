@@ -51,6 +51,8 @@ export interface Meeting {
   description: string | null;
   mine: boolean;
   with: PersonSummary | null;
+  /** The invitee's answer; null for meetings with no one else. */
+  inviteStatus: 'PENDING' | 'ACCEPTED' | null;
 }
 
 export interface MeetingRequest {

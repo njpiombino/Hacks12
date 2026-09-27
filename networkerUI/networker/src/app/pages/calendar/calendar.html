@@ -37,7 +37,7 @@
           @for (m of meetingsOn(day).slice(0, 3); track m.id) {
             <span
               class="block truncate rounded-md px-1.5 py-0.5 text-[0.7rem] font-medium"
-              [class]="m.mine ? 'bg-forest text-[#fdfbf5]' : 'bg-clay-soft text-[#8a3f22]'"
+              [class]="chipClass(m)"
               >{{ m.startsAt | date: 'h:mm' }} {{ m.title }}</span
             >
           }
@@ -60,6 +60,9 @@
           <div class="min-w-0 flex-1">
             <p class="font-medium">{{ m.title }}</p>
             <p class="text-sm text-ink-2">{{ m.startsAt | date: 'h:mm a' }} – {{ m.endsAt | date: 'h:mm a' }}</p>
+            @if (m.inviteStatus === 'PENDING') {
+              <span class="chip mt-1.5" [class.chip-clay]="!m.mine">{{ m.mine ? 'Awaiting reply' : 'Needs your answer' }}</span>
+            }
             @if (m.location) {
               <p class="mt-1 truncate text-sm text-ink-2">{{ m.location }}</p>
             }
@@ -83,9 +86,10 @@
       </div>
     }
 
-    <div class="mt-6 flex gap-4 text-xs text-ink-2">
+    <div class="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-xs text-ink-2">
       <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-forest"></span> You organized</span>
       <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-clay"></span> You were invited</span>
+      <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full border border-dashed border-ink-2"></span> Not accepted yet</span>
     </div>
   </aside>
 </div>

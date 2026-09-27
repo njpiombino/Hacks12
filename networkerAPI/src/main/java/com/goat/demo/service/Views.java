@@ -34,8 +34,9 @@ public final class Views {
 	public static Dto.MeetingView meeting(Meeting m, Profile me) {
 		boolean mine = m.getOwner().getId().equals(me.getId());
 		Profile with = mine ? m.getAttendee() : m.getOwner();
+		Dto.InviteStatus status = m.getInviteStatus() == null ? null : Dto.InviteStatus.valueOf(m.getInviteStatus().name());
 		return new Dto.MeetingView(m.getId(), m.getTitle(), m.getStartsAt(), m.getEndsAt(), m.getLocation(),
-				m.getDescription(), mine, summary(with));
+				m.getDescription(), mine, summary(with), status);
 	}
 
 }

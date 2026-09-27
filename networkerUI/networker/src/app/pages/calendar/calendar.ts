@@ -79,6 +79,14 @@ export class Calendar {
     return day.getMonth() === this.month().getMonth();
   }
 
+  /** Solid for confirmed meetings, dashed outline while the invitee hasn't answered. */
+  protected chipClass(m: Meeting) {
+    if (m.inviteStatus === 'PENDING') {
+      return m.mine ? 'border border-dashed border-forest text-forest' : 'border border-dashed border-clay text-[#8a3f22]';
+    }
+    return m.mine ? 'bg-forest text-[#fdfbf5]' : 'bg-clay-soft text-[#8a3f22]';
+  }
+
   protected onSaved() {
     this.creatingOn.set(null);
     this.editing.set(null);

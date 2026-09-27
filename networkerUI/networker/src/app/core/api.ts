@@ -85,4 +85,17 @@ export class Api {
   deleteMeeting(id: number) {
     return this.http.delete<void>(`${this.base}/meetings/${id}`);
   }
+
+  meetingInvitations() {
+    return this.http.get<Meeting[]>(`${this.base}/meetings/invitations`);
+  }
+
+  acceptMeeting(id: number) {
+    return this.http.post<Meeting>(`${this.base}/meetings/${id}/accept`, {});
+  }
+
+  /** Declining cancels the meeting for both people. */
+  declineMeeting(id: number) {
+    return this.http.post<void>(`${this.base}/meetings/${id}/decline`, {});
+  }
 }

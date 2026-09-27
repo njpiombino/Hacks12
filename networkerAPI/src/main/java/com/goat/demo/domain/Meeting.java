@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,10 +13,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-/** A meeting on the owner's calendar, optionally with one of their connections (who sees it too). */
+/**
+ * A meeting on the owner's calendar, optionally with one of their connections. The attendee has to accept the
+ * invitation; declining it deletes the meeting for both of them.
+ */
 @Entity
 @Table(name = "meetings")
 public class Meeting {
+
+	public enum InviteStatus {
+		PENDING, ACCEPTED
+	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +34,10 @@ public class Meeting {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Profile attendee;
+
+	/** The attendee's answer to the invitation; null when there's no attendee. */
+	@Enumerated(EnumType.STRING)
+	private InviteStatus inviteStatus;
 
 	@Column(nullable = false)
 	private String title;
@@ -61,6 +74,18 @@ public class Meeting {
 
 	public void setAttendee(Profile attendee) {
 		this.attendee = attendee;
+	}
+
+	public InviteStatus getInviteStatus() {
+		return inviteStatus;
+	}
+
+	public void setInviteStatus(InviteStatus inviteStatus) {
+		this.inviteStatus = inviteStatus;
+	}
+
+	public boolean isAttendee(Profile profile) {
+		return attendee != null && attendee.getId().equals(profile.getId());
 	}
 
 	public String getTitle() {

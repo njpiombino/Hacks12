@@ -30,4 +30,14 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 			""")
 	List<Meeting> findWith(@Param("me") Profile me, @Param("other") Profile other);
 
+	@Query("""
+			select m from Meeting m
+			join fetch m.owner
+			where m.attendee = :me
+			  and m.inviteStatus = com.goat.demo.domain.Meeting.InviteStatus.PENDING
+			  and m.endsAt > :now
+			order by m.startsAt
+			""")
+	List<Meeting> findPendingInvitations(@Param("me") Profile me, @Param("now") Instant now);
+
 }
