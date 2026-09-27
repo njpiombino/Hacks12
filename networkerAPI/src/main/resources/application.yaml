@@ -15,7 +15,8 @@ spring:
       enabled: true
   jpa:
     hibernate:
-      ddl-auto: update
+      # Flyway owns the schema (src/main/resources/db/migration); Hibernate only checks it matches the entities.
+      ddl-auto: validate
     open-in-view: false
   security:
     oauth2:
