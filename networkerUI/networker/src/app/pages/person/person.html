@@ -30,9 +30,14 @@
           }
         </div>
       }
-      @if (p.portfolioUrl) {
-        <div class="mt-3 flex flex-wrap gap-4 text-sm">
-          <a [href]="toHref(p.portfolioUrl)" target="_blank" rel="noopener" class="text-forest hover:underline">GitHub / Portfolio</a>
+      @if (p.portfolioUrl || p.resume) {
+        <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
+          @if (p.portfolioUrl) {
+            <a [href]="toHref(p.portfolioUrl)" target="_blank" rel="noopener" class="text-forest hover:underline">GitHub / Portfolio</a>
+          }
+          @if (p.resume; as r) {
+            <app-resume-link [personId]="p.id" [resume]="r" />
+          }
         </div>
       }
     </div>
