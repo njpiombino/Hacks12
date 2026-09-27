@@ -46,6 +46,10 @@ export class Home {
     this.refresh();
   }
 
+  protected toHref(url: string): string {
+    return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  }
+
   protected refresh() {
     const from = new Date();
     this.api.meetings(from, addDays(startOfDay(from), 15)).subscribe((m) => this.upcoming.set(m));

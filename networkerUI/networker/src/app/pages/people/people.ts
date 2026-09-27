@@ -19,7 +19,7 @@ export class People {
   private readonly api = inject(Api);
   private readonly queries = new Subject<string>();
 
-  protected readonly tab = signal<Tab>('connected');
+  protected readonly tab = signal<Tab>('find');
   protected readonly connections = signal<Connections | null>(null);
   protected readonly results = signal<Person[] | null>(null);
   protected query = '';
@@ -36,10 +36,8 @@ export class People {
   });
 
   constructor() {
-    this.api.connections().subscribe((c) => {
-      this.connections.set(c);
-      if (!c.connected.length) this.show('find');
-    });
+    this.api.connections().subscribe((c) => this.connections.set(c));
+    this.show('find');
     this.queries
       .pipe(
         debounceTime(200),

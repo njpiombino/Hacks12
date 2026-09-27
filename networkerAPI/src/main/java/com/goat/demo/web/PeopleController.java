@@ -61,6 +61,8 @@ public class PeopleController {
 				Connection c = byPerson.get(p.getId());
 				return Views.person(p, ConnectionService.relation(me, c), c == null ? null : c.getId());
 			})
+			// Already-connected people belong in "Your connections", not the search results.
+			.filter(p -> p.relation() != Relation.CONNECTED)
 			.toList();
 	}
 
