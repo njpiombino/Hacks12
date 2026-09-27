@@ -34,3 +34,6 @@ build/
 
 .DS_Store
 .specstory/*
+
+# secrets
+secrets.yaml
