@@ -3,6 +3,7 @@ package com.goat.demo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -142,22 +143,67 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$", hasSize(1)))
 			.andExpect(jsonPath("$[0].with.name").value("Carol"));
 		mvc.perform(as("auth0|carol", post("/api/meetings/" + lunchId + "/accept"))).andExpect(status().isForbidden());
+		mvc.perform(as("auth0|dave", get("/api/notifications")))
+			.andExpect(jsonPath("$", hasSize(1)))
+			.andExpect(jsonPath("$[0].type").value("INVITED"))
+			.andExpect(jsonPath("$[0].actor.name").value("Carol"))
+			.andExpect(jsonPath("$[0].read").value(false));
 
 		mvc.perform(as("auth0|dave", post("/api/meetings/" + lunchId + "/accept")))
 			.andExpect(jsonPath("$.inviteStatus").value("ACCEPTED"));
 		mvc.perform(as("auth0|dave", get("/api/meetings/invitations"))).andExpect(jsonPath("$", hasSize(0)));
+		mvc.perform(as("auth0|carol", get("/api/notifications"))).andExpect(jsonPath("$[0].type").value("ACCEPTED"));
 
-		// Moving the meeting asks Dave again.
+		// Moving the meeting asks Dave again, and tells him what changed.
 		mvc.perform(as("auth0|carol", put("/api/meetings/" + lunchId)).content("""
 				{"title":"Lunch","startsAt":"2030-01-03T15:00:00Z","endsAt":"2030-01-03T16:00:00Z","attendeeId":"%s"}"""
 			.formatted(dave))).andExpect(jsonPath("$.inviteStatus").value("PENDING"));
+		mvc.perform(as("auth0|dave", get("/api/notifications")))
+			.andExpect(jsonPath("$[0].type").value("UPDATED"))
+			.andExpect(jsonPath("$[0].changes", hasSize(1)))
+			.andExpect(jsonPath("$[0].changes[0]").value("TIME"))
+			.andExpect(jsonPath("$[0].startsAt").value("2030-01-03T15:00:00Z"));
 
-		// Declining takes it off both calendars.
+		mvc.perform(as("auth0|carol", put("/api/meetings/" + lunchId)).content("""
+				{"title":"Brunch","startsAt":"2030-01-03T15:00:00Z","endsAt":"2030-01-03T16:00:00Z","location":"The Hive","attendeeId":"%s"}"""
+			.formatted(dave)));
+		mvc.perform(as("auth0|dave", get("/api/notifications")))
+			.andExpect(jsonPath("$[0].changes", hasSize(2)))
+			.andExpect(jsonPath("$[0].changes[0]").value("PLACE"))
+			.andExpect(jsonPath("$[0].changes[1]").value("TITLE"))
+			.andExpect(jsonPath("$[0].title").value("Brunch"))
+			.andExpect(jsonPath("$[0].previousTitle").value("Lunch"))
+			.andExpect(jsonPath("$[0].location").value("The Hive"));
+
+		// Reading them clears the unread state.
+		mvc.perform(as("auth0|dave", post("/api/notifications/read"))).andExpect(status().isOk());
+		mvc.perform(as("auth0|dave", get("/api/notifications")))
+			.andExpect(jsonPath("$[?(@.read == false)]", hasSize(0)));
+
+		// Declining takes it off both calendars, and Carol hears about it.
 		mvc.perform(as("auth0|dave", post("/api/meetings/" + lunchId + "/decline"))).andExpect(status().isOk());
 		for (String who : List.of("auth0|carol", "auth0|dave")) {
 			mvc.perform(as(who, get("/api/meetings").param("from", "2030-01-01T00:00:00Z")
 				.param("to", "2030-02-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(0)));
 		}
+		mvc.perform(as("auth0|carol", get("/api/notifications")))
+			.andExpect(jsonPath("$[0].type").value("DECLINED"))
+			.andExpect(jsonPath("$[0].title").value("Brunch"));
+
+		// The organizer cancelling tells the invitee.
+		String dinner = mvc.perform(as("auth0|carol", post("/api/meetings")).content("""
+				{"title":"Dinner","startsAt":"2030-01-05T23:00:00Z","endsAt":"2030-01-06T01:00:00Z","attendeeId":"%s"}"""
+			.formatted(dave))).andReturn().getResponse().getContentAsString();
+		mvc.perform(as("auth0|carol", delete("/api/meetings/" + JsonPath.read(dinner, "$.id"))))
+			.andExpect(status().isOk());
+		mvc.perform(as("auth0|dave", get("/api/notifications")))
+			.andExpect(jsonPath("$[0].type").value("CANCELLED"))
+			.andExpect(jsonPath("$[0].title").value("Dinner"))
+			.andExpect(jsonPath("$[1].type").value("INVITED"));
+
+		// Nobody else can see or touch them.
+		mvc.perform(as("auth0|carol", get("/api/notifications")))
+			.andExpect(jsonPath("$[?(@.title == 'Dinner')]", hasSize(0)));
 	}
 
 	private static Object incomingFrom(String connectionsJson, String name) {

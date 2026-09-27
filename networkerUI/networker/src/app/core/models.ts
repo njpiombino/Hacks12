@@ -55,6 +55,24 @@ export interface Meeting {
   inviteStatus: 'PENDING' | 'ACCEPTED' | null;
 }
 
+export type NotificationType = 'INVITED' | 'UPDATED' | 'CANCELLED' | 'ACCEPTED' | 'DECLINED';
+
+/** Something the other person did to a meeting. Title, time and place are as they were right after the change. */
+export interface AppNotification {
+  id: number;
+  type: NotificationType;
+  actor: PersonSummary;
+  meetingId: number | null;
+  title: string;
+  previousTitle: string | null;
+  startsAt: string;
+  location: string | null;
+  /** For UPDATED: which of these changed. */
+  changes: ('TIME' | 'PLACE' | 'TITLE')[];
+  createdAt: string;
+  read: boolean;
+}
+
 export interface MeetingRequest {
   title: string;
   startsAt: string;
