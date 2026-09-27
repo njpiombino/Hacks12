@@ -55,4 +55,19 @@ public class MeetingController {
 		meetings.delete(profiles.current(jwt), id);
 	}
 
+	@GetMapping("/invitations")
+	public List<Dto.MeetingView> invitations(@AuthenticationPrincipal Jwt jwt) {
+		return meetings.invitations(profiles.current(jwt));
+	}
+
+	@PostMapping("/{id}/accept")
+	public Dto.MeetingView accept(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+		return meetings.accept(profiles.current(jwt), id);
+	}
+
+	@PostMapping("/{id}/decline")
+	public void decline(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+		meetings.decline(profiles.current(jwt), id);
+	}
+
 }

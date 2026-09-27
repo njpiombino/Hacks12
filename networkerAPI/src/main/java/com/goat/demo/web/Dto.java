@@ -37,8 +37,13 @@ public final class Dto {
 	public record NoteView(Long id, PersonSummary subject, String body, Instant createdAt, Instant updatedAt) {
 	}
 
+	/** Whether the attendee has accepted a meeting invitation yet. */
+	public enum InviteStatus {
+		PENDING, ACCEPTED
+	}
+
 	public record MeetingView(Long id, String title, Instant startsAt, Instant endsAt, String location,
-			String description, boolean mine, PersonSummary with) {
+			String description, boolean mine, PersonSummary with, InviteStatus inviteStatus) {
 	}
 
 	public record ProfileUpdate(@NotBlank @Size(max = 120) String name, @Size(max = 160) String headline,

@@ -81,6 +81,7 @@ All endpoints need an Auth0 access token for the API audience.
 | `GET/POST /api/connections`, `POST /api/connections/{id}/accept`, `DELETE /api/connections/{id}` | Connection requests |
 | `GET/POST /api/people/{id}/notes`, `PUT/DELETE /api/notes/{id}`, `GET /api/notes/recent` | Private notes |
 | `GET /api/meetings?from=&to=`, `POST /api/meetings`, `PUT/DELETE /api/meetings/{id}`, `GET /api/people/{id}/meetings` | Calendar |
+| `GET /api/meetings/invitations`, `POST /api/meetings/{id}/accept`, `POST /api/meetings/{id}/decline` | Meeting invitations (declining cancels the meeting for both people) |
 
 ## Tests
 

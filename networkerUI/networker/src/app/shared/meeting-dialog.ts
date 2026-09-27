@@ -95,4 +95,31 @@ export class MeetingDialog implements OnInit {
     if (!m || !confirm(`Delete "${m.title}"?`)) return;
     this.api.deleteMeeting(m.id).subscribe(() => this.saved.emit());
   }
+
+  protected accept() {
+    const m = this.meeting();
+    if (!m) return;
+    this.saving.set(true);
+    this.api.acceptMeeting(m.id).subscribe({
+      next: () => this.saved.emit(),
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e.error?.detail ?? 'Something went wrong accepting that meeting.');
+      },
+    });
+  }
+
+  protected decline() {
+    const m = this.meeting();
+    const organizer = m?.with?.name ?? 'the organizer';
+    if (!m || !confirm(`Decline "${m.title}"? It will be cancelled for you and ${organizer}.`)) return;
+    this.saving.set(true);
+    this.api.declineMeeting(m.id).subscribe({
+      next: () => this.saved.emit(),
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e.error?.detail ?? 'Something went wrong declining that meeting.');
+      },
+    });
+  }
 }

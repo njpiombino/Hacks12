@@ -41,7 +41,12 @@
                     <p class="font-display text-2xl font-semibold leading-none">{{ m.startsAt | date: 'd' }}</p>
                   </div>
                   <div class="min-w-0 flex-1">
-                    <p class="truncate font-medium">{{ m.title }}</p>
+                    <p class="truncate font-medium">
+                      {{ m.title }}
+                      @if (m.inviteStatus === 'PENDING') {
+                        <span class="chip ml-1 align-middle" [class.chip-clay]="!m.mine">{{ m.mine ? 'Awaiting reply' : 'Needs your answer' }}</span>
+                      }
+                    </p>
                     <p class="truncate text-sm text-ink-2">
                       {{ m.startsAt | date: 'h:mm a' }} – {{ m.endsAt | date: 'h:mm a' }}
                       @if (m.location) {
@@ -84,10 +89,23 @@
 
   <aside class="space-y-8">
     @if (connections(); as c) {
-      @if (c.incoming.length) {
+      @if (c.incoming.length || invitations().length) {
         <section>
           <h2 class="section-title mb-3">Waiting on you</h2>
           <ul class="space-y-3">
+            @for (m of invitations(); track m.id) {
+              <li class="card flex items-center gap-3 p-4">
+                <button class="flex min-w-0 flex-1 items-center gap-3 text-left" (click)="editing.set(m)">
+                  <app-avatar [name]="m.with?.name ?? null" [src]="m.with?.pictureUrl ?? null" />
+                  <span class="min-w-0">
+                    <span class="block truncate font-medium hover:underline">{{ m.title }}</span>
+                    <span class="block truncate text-xs text-ink-2">{{ m.with?.name }} · {{ m.startsAt | date: 'EEE, MMM d · h:mm a' }}</span>
+                  </span>
+                </button>
+                <button class="btn btn-primary btn-sm" (click)="acceptMeeting(m)">Accept</button>
+                <button class="btn btn-ghost btn-sm" (click)="declineMeeting(m)" aria-label="Decline">✕</button>
+              </li>
+            }
             @for (item of c.incoming; track item.id) {
               <li class="card flex items-center gap-3 p-4">
                 <a [routerLink]="['/people', item.person.id]"><app-avatar [name]="item.person.name" [src]="item.person.pictureUrl" /></a>

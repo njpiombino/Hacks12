@@ -56,6 +56,23 @@ public class MeetingService {
 		meetings.delete(findOwned(me, id));
 	}
 
+	/** Upcoming meetings the user has been invited to and hasn't answered yet. */
+	@Transactional(readOnly = true)
+	public List<Dto.MeetingView> invitations(Profile me) {
+		return meetings.findPendingInvitations(me, Instant.now()).stream().map(m -> Views.meeting(m, me)).toList();
+	}
+
+	public Dto.MeetingView accept(Profile me, Long id) {
+		Meeting meeting = findInvited(me, id);
+		meeting.setInviteStatus(Meeting.InviteStatus.ACCEPTED);
+		return Views.meeting(meeting, me);
+	}
+
+	/** Turning down an invitation cancels the meeting, so it comes off both calendars. */
+	public void decline(Profile me, Long id) {
+		meetings.delete(findInvited(me, id));
+	}
+
 	private void apply(Profile me, Meeting meeting, Dto.MeetingRequest request) {
 		if (!request.endsAt().isAfter(request.startsAt())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A meeting has to end after it starts");
@@ -67,12 +84,30 @@ public class MeetingService {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can only invite your connections");
 			}
 		}
+		// A new invitee, or a new time for the current one, needs a fresh answer.
+		boolean sameAttendee = attendee != null && meeting.isAttendee(attendee);
+		boolean sameTime = request.startsAt().equals(meeting.getStartsAt()) && request.endsAt().equals(meeting.getEndsAt());
+		if (attendee == null) {
+			meeting.setInviteStatus(null);
+		}
+		else if (!sameAttendee || !sameTime) {
+			meeting.setInviteStatus(Meeting.InviteStatus.PENDING);
+		}
 		meeting.setTitle(request.title().strip());
 		meeting.setStartsAt(request.startsAt());
 		meeting.setEndsAt(request.endsAt());
 		meeting.setLocation(request.location() == null || request.location().isBlank() ? null : request.location().strip());
 		meeting.setDescription(request.description() == null || request.description().isBlank() ? null : request.description().strip());
 		meeting.setAttendee(attendee);
+	}
+
+	private Meeting findInvited(Profile me, Long id) {
+		Meeting meeting = meetings.findById(id)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No such meeting"));
+		if (!meeting.isAttendee(me)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the person invited can answer this");
+		}
+		return meeting;
 	}
 
 	private Meeting findOwned(Profile me, Long id) {

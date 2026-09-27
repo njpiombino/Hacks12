@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,9 +127,37 @@ class ApiFlowTests {
 			.andExpect(jsonPath("$.connected", hasSize(1)))
 			.andExpect(jsonPath("$.connected[0].person.name").value("Carol"));
 
-		mvc.perform(as("auth0|carol", post("/api/meetings")).content("""
+		String lunch = mvc.perform(as("auth0|carol", post("/api/meetings")).content("""
 				{"title":"Lunch","startsAt":"2030-01-02T15:00:00Z","endsAt":"2030-01-02T16:00:00Z","attendeeId":"%s"}"""
-			.formatted(dave))).andExpect(status().isOk());
+			.formatted(dave)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.inviteStatus").value("PENDING"))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		Object lunchId = JsonPath.read(lunch, "$.id");
+
+		// Dave has to answer; Carol can't answer for him.
+		mvc.perform(as("auth0|dave", get("/api/meetings/invitations")))
+			.andExpect(jsonPath("$", hasSize(1)))
+			.andExpect(jsonPath("$[0].with.name").value("Carol"));
+		mvc.perform(as("auth0|carol", post("/api/meetings/" + lunchId + "/accept"))).andExpect(status().isForbidden());
+
+		mvc.perform(as("auth0|dave", post("/api/meetings/" + lunchId + "/accept")))
+			.andExpect(jsonPath("$.inviteStatus").value("ACCEPTED"));
+		mvc.perform(as("auth0|dave", get("/api/meetings/invitations"))).andExpect(jsonPath("$", hasSize(0)));
+
+		// Moving the meeting asks Dave again.
+		mvc.perform(as("auth0|carol", put("/api/meetings/" + lunchId)).content("""
+				{"title":"Lunch","startsAt":"2030-01-03T15:00:00Z","endsAt":"2030-01-03T16:00:00Z","attendeeId":"%s"}"""
+			.formatted(dave))).andExpect(jsonPath("$.inviteStatus").value("PENDING"));
+
+		// Declining takes it off both calendars.
+		mvc.perform(as("auth0|dave", post("/api/meetings/" + lunchId + "/decline"))).andExpect(status().isOk());
+		for (String who : List.of("auth0|carol", "auth0|dave")) {
+			mvc.perform(as(who, get("/api/meetings").param("from", "2030-01-01T00:00:00Z")
+				.param("to", "2030-02-01T00:00:00Z"))).andExpect(jsonPath("$", hasSize(0)));
+		}
 	}
 
 	private static Object incomingFrom(String connectionsJson, String name) {

@@ -20,6 +20,7 @@ export class Home {
 
   protected readonly connections = signal<Connections | null>(null);
   protected readonly upcoming = signal<Meeting[] | null>(null);
+  protected readonly invitations = signal<Meeting[]>([]);
   protected readonly notes = signal<Note[] | null>(null);
   protected readonly editing = signal<Meeting | null>(null);
   protected readonly creating = signal(false);
@@ -49,6 +50,7 @@ export class Home {
   protected refresh() {
     const from = new Date();
     this.api.meetings(from, addDays(startOfDay(from), 15)).subscribe((m) => this.upcoming.set(m));
+    this.api.meetingInvitations().subscribe((m) => this.invitations.set(m));
     this.api.connections().subscribe((c) => this.connections.set(c));
     this.api.recentNotes().subscribe((n) => this.notes.set(n));
   }
@@ -59,6 +61,15 @@ export class Home {
 
   protected decline(id: number) {
     this.api.removeConnection(id).subscribe((c) => this.connections.set(c));
+  }
+
+  protected acceptMeeting(m: Meeting) {
+    this.api.acceptMeeting(m.id).subscribe(() => this.refresh());
+  }
+
+  protected declineMeeting(m: Meeting) {
+    if (!confirm(`Decline "${m.title}"? It will be cancelled for you and ${m.with?.name ?? 'the organizer'}.`)) return;
+    this.api.declineMeeting(m.id).subscribe(() => this.refresh());
   }
 
   protected onSaved() {

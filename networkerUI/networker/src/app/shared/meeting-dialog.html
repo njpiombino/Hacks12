@@ -12,7 +12,15 @@
       <div>
         <h2 id="meeting-dialog-title" class="text-2xl font-semibold">{{ m ? (m.mine ? 'Edit meeting' : m.title) : 'Schedule a meeting' }}</h2>
         @if (m && !m.mine) {
-          <p class="mt-1 text-sm text-ink-2">{{ m.with?.name }} invited you. Only they can change it.</p>
+          <p class="mt-1 text-sm text-ink-2">
+            @if (m.inviteStatus === 'PENDING') {
+              {{ m.with?.name }} invited you. Accept to confirm, or decline to cancel it.
+            } @else {
+              {{ m.with?.name }} invited you. Only they can change it.
+            }
+          </p>
+        } @else if (m?.inviteStatus === 'PENDING') {
+          <p class="mt-1"><span class="chip">Waiting for {{ m?.with?.name }} to accept</span></p>
         }
       </div>
       <button type="button" class="btn btn-ghost btn-sm -mr-2" (click)="closed.emit()" aria-label="Close">✕</button>
@@ -76,10 +84,17 @@
       @if (m?.mine) {
         <button type="button" class="btn btn-danger" (click)="remove()">Delete</button>
       }
+      @if (m && !m.mine) {
+        <button type="button" class="btn btn-danger" [disabled]="saving()" (click)="decline()">
+          {{ m.inviteStatus === 'PENDING' ? 'Decline' : "Can't make it" }}
+        </button>
+      }
       <span class="flex-1"></span>
       <button type="button" class="btn btn-ghost" (click)="closed.emit()">{{ m && !m.mine ? 'Close' : 'Cancel' }}</button>
       @if (!m || m.mine) {
         <button type="submit" class="btn btn-primary" [disabled]="f.invalid || saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      } @else if (m.inviteStatus === 'PENDING') {
+        <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="accept()">Accept</button>
       }
     </div>
   </form>
