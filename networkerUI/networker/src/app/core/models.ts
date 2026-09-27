@@ -14,6 +14,14 @@ export interface Person {
   hideEmail: boolean;
   relation: Relation;
   connectionId: number | null;
+  /** Only shown to the person themselves and their connections. */
+  resume: ResumeInfo | null;
+}
+
+export interface ResumeInfo {
+  fileName: string;
+  sizeBytes: number;
+  uploadedAt: string;
 }
 
 export interface PersonSummary {

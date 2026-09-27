@@ -21,6 +21,21 @@ export class Api {
     return this.http.put<Person>(`${this.base}/me`, update);
   }
 
+  uploadResume(file: File) {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.put<Person>(`${this.base}/me/resume`, body);
+  }
+
+  deleteResume() {
+    return this.http.delete<Person>(`${this.base}/me/resume`);
+  }
+
+  /** The PDF itself. Fetched rather than linked so the request carries your login. */
+  resumeFile(personId: string) {
+    return this.http.get(`${this.base}/people/${personId}/resume`, { responseType: 'blob' });
+  }
+
   searchPeople(q: string) {
     return this.http.get<Person[]>(`${this.base}/people`, { params: { q } });
   }
