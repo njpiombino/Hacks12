@@ -36,3 +36,6 @@ settings.json
 .env.*
 !.env.example
 secrets.yaml
+
+# Personal/event files not meant for the repo
+*.pptx

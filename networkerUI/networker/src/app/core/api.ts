@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
 import { environment } from '../../environments/environment';
-import { AppNotification, Connections, Meeting, MeetingRequest, Note, Person, ProfileUpdate } from './models';
+import { AppNotification, ChatMessage, Connections, Meeting, MeetingRequest, Note, Person, ProfileUpdate } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -124,5 +124,10 @@ export class Api {
 
   markNotificationsRead() {
     return this.http.post<void>(`${this.base}/notifications/read`, {});
+  }
+
+  chat(message: string, history: ChatMessage[]) {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return this.http.post<{ reply: string }>(`${this.base}/chat`, { message, history, timezone });
   }
 }

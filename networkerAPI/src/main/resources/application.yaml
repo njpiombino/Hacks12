@@ -36,6 +36,10 @@ spring:
           # Identifier of the Auth0 API you created for this backend
           audiences: ${AUTH0_AUDIENCE:https://networker-api}
 
+gemini:
+  # api-key comes from secrets.yaml; not committed.
+  model: ${GEMINI_MODEL:gemini-3.8-flash}
+
 app:
   cors-origins: ${CORS_ORIGINS:http://localhost:4200}
   # Seeds a handful of sample people, two of whom send each new user a connection
