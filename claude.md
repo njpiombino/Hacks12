@@ -24,12 +24,12 @@ For the "professional and handmade" feel, I used warm paper colours, a Fraunces 
 **Where things are**
 - **Backend** (`networkerAPI`): the main code is in `domain/`, `service/`, `web/` and `config/`, under `src/main/java/com/goat/demo/`. [ApiFlowTests.java](networkerAPI/src/test/java/com/goat/demo/ApiFlowTests.java) tests connecting, notes, meetings and privacy.
 - **Frontend** (`networkerUI/networker/src/app`): shared services in `core/`, one folder per screen in `pages/`, the avatar and meeting dialog in `shared/`, and the layout in [shell.html](networkerUI/networker/src/app/shell.html). Colours and fonts are in [styles.css](networkerUI/networker/src/styles.css).
-- [docker-compose.yml](docker-compose.yml) runs Postgres, and [README.md](README.md) has the setup steps.
+- The database is a remote Postgres on DigitalOcean. Connection details live in the gitignored `networkerAPI/src/main/resources/secrets.yaml`, and Flyway migrations in `networkerAPI/src/main/resources/db/migration/` create the schema. [README.md](README.md) has the setup steps.
 
 **To run it**
 
 *First time setup*
-docker compose up -d                          # Postgres (start Docker Desktop first)
+Get `secrets.yaml` from a teammate and add your IP to the database's trusted sources (see README).
 
 *Run both in different terminals*
 cd networkerAPI && ./mvnw spring-boot:run     # API on :8080
