@@ -1,7 +1,9 @@
 package com.goat.demo.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.goat.demo.domain.Meeting;
+import com.goat.demo.domain.Notification;
 import com.goat.demo.domain.Profile;
 import com.goat.demo.repository.MeetingRepository;
 import com.goat.demo.web.Dto;
@@ -24,10 +27,14 @@ public class MeetingService {
 
 	private final ConnectionService connections;
 
-	public MeetingService(MeetingRepository meetings, ProfileService profiles, ConnectionService connections) {
+	private final NotificationService notifications;
+
+	public MeetingService(MeetingRepository meetings, ProfileService profiles, ConnectionService connections,
+			NotificationService notifications) {
 		this.meetings = meetings;
 		this.profiles = profiles;
 		this.connections = connections;
+		this.notifications = notifications;
 	}
 
 	@Transactional(readOnly = true)
@@ -43,17 +50,56 @@ public class MeetingService {
 	public Dto.MeetingView create(Profile me, Dto.MeetingRequest request) {
 		Meeting meeting = new Meeting(me);
 		apply(me, meeting, request);
-		return Views.meeting(meetings.save(meeting), me);
+		meetings.save(meeting);
+		if (meeting.getAttendee() != null) {
+			notifications.send(meeting.getAttendee(), me, Notification.Type.INVITED, meeting);
+		}
+		return Views.meeting(meeting, me);
 	}
 
 	public Dto.MeetingView update(Profile me, Long id, Dto.MeetingRequest request) {
 		Meeting meeting = findOwned(me, id);
+		Profile before = meeting.getAttendee();
+		String oldTitle = meeting.getTitle();
+		Instant oldStart = meeting.getStartsAt();
+		Instant oldEnd = meeting.getEndsAt();
+		String oldLocation = meeting.getLocation();
+
+		// Someone taken off the meeting hears it was cancelled, as they last knew it.
+		if (before != null && (request.attendeeId() == null || !request.attendeeId().equals(before.getId()))) {
+			notifications.send(before, me, Notification.Type.CANCELLED, meeting);
+		}
+
 		apply(me, meeting, request);
+
+		Profile after = meeting.getAttendee();
+		if (after != null && (before == null || !before.getId().equals(after.getId()))) {
+			notifications.send(after, me, Notification.Type.INVITED, meeting);
+		}
+		else if (after != null) {
+			List<Notification.Change> changes = new ArrayList<>();
+			if (!meeting.getStartsAt().equals(oldStart) || !meeting.getEndsAt().equals(oldEnd)) {
+				changes.add(Notification.Change.TIME);
+			}
+			if (!Objects.equals(meeting.getLocation(), oldLocation)) {
+				changes.add(Notification.Change.PLACE);
+			}
+			if (!meeting.getTitle().equals(oldTitle)) {
+				changes.add(Notification.Change.TITLE);
+			}
+			if (!changes.isEmpty()) {
+				notifications.sendUpdate(after, me, meeting, changes, oldTitle);
+			}
+		}
 		return Views.meeting(meeting, me);
 	}
 
 	public void delete(Profile me, Long id) {
-		meetings.delete(findOwned(me, id));
+		Meeting meeting = findOwned(me, id);
+		if (meeting.getAttendee() != null) {
+			notifications.send(meeting.getAttendee(), me, Notification.Type.CANCELLED, meeting);
+		}
+		meetings.delete(meeting);
 	}
 
 	/** Upcoming meetings the user has been invited to and hasn't answered yet. */
@@ -64,13 +110,18 @@ public class MeetingService {
 
 	public Dto.MeetingView accept(Profile me, Long id) {
 		Meeting meeting = findInvited(me, id);
-		meeting.setInviteStatus(Meeting.InviteStatus.ACCEPTED);
+		if (meeting.getInviteStatus() != Meeting.InviteStatus.ACCEPTED) {
+			meeting.setInviteStatus(Meeting.InviteStatus.ACCEPTED);
+			notifications.send(meeting.getOwner(), me, Notification.Type.ACCEPTED, meeting);
+		}
 		return Views.meeting(meeting, me);
 	}
 
 	/** Turning down an invitation cancels the meeting, so it comes off both calendars. */
 	public void decline(Profile me, Long id) {
-		meetings.delete(findInvited(me, id));
+		Meeting meeting = findInvited(me, id);
+		notifications.send(meeting.getOwner(), me, Notification.Type.DECLINED, meeting);
+		meetings.delete(meeting);
 	}
 
 	private void apply(Profile me, Meeting meeting, Dto.MeetingRequest request) {

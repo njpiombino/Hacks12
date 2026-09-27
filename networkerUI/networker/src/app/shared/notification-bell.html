@@ -1,0 +1,73 @@
+<div class="relative">
+  <button
+    class="relative flex size-9 items-center justify-center rounded-full text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+    (click)="toggle()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="unread() ? unread() + ' new notifications' : 'Notifications'"
+  >
+    <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+    @if (unread()) {
+      <span class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-clay px-1 text-[0.65rem] font-semibold text-[#fdfbf5]">
+        {{ unread() > 9 ? '9+' : unread() }}
+      </span>
+    }
+  </button>
+
+  @if (open()) {
+    <div class="fixed inset-0 z-10" (click)="close()"></div>
+    <div class="card absolute right-0 z-20 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden" role="dialog" aria-label="Notifications">
+      <p class="border-b border-line px-4 py-3 font-display text-lg font-semibold">Notifications</p>
+      <ul class="max-h-[26rem] divide-y divide-line overflow-y-auto">
+        @for (n of items(); track n.id) {
+          <li>
+            <button class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-sunken/50" [class.bg-forest-soft/40]="!n.read" (click)="go(n)">
+              <app-avatar [name]="n.actor.name" [src]="n.actor.pictureUrl" size="sm" />
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm" [class.font-medium]="!n.read">{{ headline(n) }}</span>
+                @switch (n.type) {
+                  @case ('UPDATED') {
+                    @for (c of n.changes; track c) {
+                      <span class="block text-xs text-ink-2">
+                        @switch (c) {
+                          @case ('TIME') { Now {{ n.startsAt | date: 'EEE, MMM d · h:mm a' }} }
+                          @case ('PLACE') { {{ n.location ? 'Now at ' + n.location : 'No place set any more' }} }
+                          @case ('TITLE') { Now called “{{ n.title }}” }
+                        }
+                      </span>
+                    }
+                  }
+                  @case ('CANCELLED') {
+                    <span class="block text-xs text-ink-2 line-through">{{ n.startsAt | date: 'EEE, MMM d · h:mm a' }}</span>
+                  }
+                  @case ('DECLINED') {
+                    <span class="block text-xs text-ink-2 line-through">{{ n.startsAt | date: 'EEE, MMM d · h:mm a' }}</span>
+                  }
+                  @default {
+                    <span class="block text-xs text-ink-2">
+                      {{ n.startsAt | date: 'EEE, MMM d · h:mm a' }}
+                      @if (n.location) {
+                        · {{ n.location }}
+                      }
+                    </span>
+                  }
+                }
+                <span class="hand mt-0.5 block text-sm text-ink-3">{{ n.createdAt | date: 'MMM d, h:mm a' }}</span>
+              </span>
+              @if (!n.read) {
+                <span class="mt-1.5 size-2 shrink-0 rounded-full bg-clay" aria-label="New"></span>
+              }
+            </button>
+          </li>
+        } @empty {
+          <li class="px-4 py-8 text-center text-sm text-ink-2">
+            Nothing new. When someone changes or cancels a meeting with you, you'll hear about it here.
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</div>
