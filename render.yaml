@@ -1,0 +1,41 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# networksconnect.online -> networker-web, api.networksconnect.online -> networker-api
+services:
+  - type: web
+    name: networker-api
+    runtime: docker
+    rootDir: networkerAPI
+    plan: free
+    domains:
+      - api.networksconnect.online
+    envVars:
+      # The team's DigitalOcean Postgres (same values as secrets.yaml). Enter these in the
+      # Render dashboard when creating the Blueprint; they are never committed.
+      - key: DATASOURCE_HOST
+        sync: false
+      - key: DATASOURCE_USERNAME
+        sync: false
+      - key: DATASOURCE_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://networksconnect.online,https://www.networksconnect.online
+      - key: DEMO_DATA
+        value: "true"
+
+  - type: web
+    name: networker-web
+    runtime: static
+    rootDir: networkerUI/networker
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist/networker/browser
+    domains:
+      - networksconnect.online
+      - www.networksconnect.online
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+    routes:
+      # Let Angular's router handle deep links like /people/123.
+      - type: rewrite
+        source: /*
+        destination: /index.html

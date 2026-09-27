@@ -88,3 +88,23 @@ All endpoints need an Auth0 access token for the API audience.
 cd networkerAPI && ./mvnw test           # API flow tests against in-memory H2
 cd networkerUI/networker && npx ng test   # frontend unit tests
 ```
+
+## Deploying (networksconnect.online)
+
+The site and API run on [Render](https://render.com), set up by [render.yaml](render.yaml). The database is the team's DigitalOcean Postgres.
+
+| Address | Render service |
+| --- | --- |
+| `networksconnect.online`, `www.networksconnect.online` | `networker-web` (static Angular build) |
+| `api.networksconnect.online` | `networker-api` (Docker, [networkerAPI/Dockerfile](networkerAPI/Dockerfile)) |
+
+1. In Render, choose **New > Blueprint** and pick this repo. When asked, enter `DATASOURCE_HOST`, `DATASOURCE_USERNAME` and `DATASOURCE_PASSWORD` (the same values as `secrets.yaml`).
+2. In DigitalOcean, if the database has trusted sources turned on, add the outbound IPs listed on the `networker-api` service's **Connect** tab.
+3. In Porkbun DNS for `networksconnect.online`, delete the parking records and add:
+   - `ALIAS` record, host blank, pointing to `networker-web.onrender.com` (or an `A` record to `216.24.57.1`)
+   - `CNAME` record, host `www`, pointing to `networker-web.onrender.com`
+   - `CNAME` record, host `api`, pointing to `networker-api.onrender.com`
+
+   Use the actual `*.onrender.com` names Render shows, since it adds a suffix if a name is taken. Render issues the HTTPS certificates once DNS resolves.
+
+Production builds read the API address from `networkerUI/networker/src/environments/environment.production.ts`. Auth0 already allows the domain.
